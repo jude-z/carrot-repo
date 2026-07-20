@@ -1,4 +1,4 @@
-package jude.carrot.apiserver.user.domain;
+package jude.carrot.apiserver.domain.user;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,6 +11,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true)
     private String email;
     private String password;
     @Column(name = "access_token")

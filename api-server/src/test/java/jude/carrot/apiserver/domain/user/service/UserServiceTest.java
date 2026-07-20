@@ -1,13 +1,11 @@
-package jude.carrot.apiserver.user.service;
+package jude.carrot.apiserver.domain.user.service;
 
-import jude.carrot.apiserver.common.exception.UserFoundException;
-import jude.carrot.apiserver.user.domain.User;
-import jude.carrot.apiserver.user.dto.request.UserRequest;
-import jude.carrot.apiserver.user.dto.request.UserRequest.SignUpRequest;
-import jude.carrot.apiserver.user.fixture.domain.UserFactory;
-import jude.carrot.apiserver.user.fixture.dto.request.RequestFactory;
-import jude.carrot.apiserver.user.repository.UserRepository;
-import jude.carrot.apiserver.user.repository.UserRepositoryImpl;
+import jude.carrot.apiserver.domain.user.exception.UserFoundException;
+import jude.carrot.apiserver.domain.user.User;
+import jude.carrot.apiserver.domain.user.dto.request.UserRequest.SignUpRequest;
+import jude.carrot.apiserver.domain.user.fixture.domain.UserFactory;
+import jude.carrot.apiserver.domain.user.fixture.dto.request.RequestFactory;
+import jude.carrot.apiserver.domain.user.repository.UserRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

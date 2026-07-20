@@ -1,6 +1,6 @@
-package jude.carrot.apiserver.user.repository;
+package jude.carrot.apiserver.domain.user.repository;
 
-import jude.carrot.apiserver.user.domain.User;
+import jude.carrot.apiserver.domain.user.User;
 
 import java.util.Optional;
 

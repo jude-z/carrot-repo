@@ -1,6 +1,6 @@
-package jude.carrot.apiserver.user.repository.jpa;
+package jude.carrot.apiserver.domain.user.repository.jpa;
 
-import jude.carrot.apiserver.user.domain.User;
+import jude.carrot.apiserver.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
