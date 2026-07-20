@@ -1,7 +1,7 @@
-package jude.carrot.apiserver.user.repository.jpa;
+package jude.carrot.apiserver.domain.user.repository.jpa;
 
-import jude.carrot.apiserver.user.domain.User;
-import jude.carrot.apiserver.user.fixture.domain.UserFactory;
+import jude.carrot.apiserver.domain.user.User;
+import jude.carrot.apiserver.domain.user.fixture.domain.UserFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -24,7 +25,7 @@ public class UserJpaRepositoryTest {
 
     static String DATABASE_NAME = "test";
     static String DATABASE_USERNAME = "test";
-    static String DATABASE_PASSWORD = "test";
+    static String DATABASE_PASSWORD = UUID.randomUUID().toString();
     static String TEST_EMAIL = "test@gmail.com";
     static String FAKE_EMAIL = "fake@gmail.com";
 
@@ -34,6 +35,7 @@ public class UserJpaRepositoryTest {
             .withDatabaseName(DATABASE_NAME)
             .withUsername(DATABASE_USERNAME)
             .withPassword(DATABASE_PASSWORD);
+
     @Autowired
     UserJpaRepository userJpaRepository;
 
@@ -47,17 +49,15 @@ public class UserJpaRepositoryTest {
     @DisplayName("findByEmail Test using TestEmail")
     void findByEmailTestEmail(){
         Optional<User> optionalUser = userJpaRepository.findByEmail(TEST_EMAIL);
-        User user = optionalUser.orElse(null);
 
-        assertThat(optionalUser.isPresent()).isTrue();
-        assertThat(user.getEmail()).isEqualTo(TEST_EMAIL);
+        assertThat(optionalUser).isPresent()
+                .hasValueSatisfying(user -> assertThat(user.getEmail()).isEqualTo(TEST_EMAIL));
     }
 
     @Test
     @DisplayName("findByEmail Test using FakeEmail")
     void findByEmailFakeEmail(){
         Optional<User> optionalUser = userJpaRepository.findByEmail(FAKE_EMAIL);
-
         assertThat(optionalUser.isPresent()).isFalse();
     }
 

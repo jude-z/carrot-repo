@@ -1,4 +1,4 @@
-package jude.carrot.apiserver.user.dto.request;
+package jude.carrot.apiserver.domain.user.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 public class UserRequest {
+
+    private UserRequest() {
+    }
 
     @Data
     @NoArgsConstructor

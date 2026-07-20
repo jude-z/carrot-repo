@@ -1,7 +1,7 @@
-package jude.carrot.apiserver.user.repository;
+package jude.carrot.apiserver.domain.user.repository;
 
-import jude.carrot.apiserver.user.domain.User;
-import jude.carrot.apiserver.user.repository.jpa.UserJpaRepository;
+import jude.carrot.apiserver.domain.user.User;
+import jude.carrot.apiserver.domain.user.repository.jpa.UserJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +17,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.context.annotation.Bean;
 
 import java.util.Optional;
+import java.util.UUID;
 
-import static jude.carrot.apiserver.user.repository.UserRepositoryImplTest.*;
+import static jude.carrot.apiserver.domain.user.repository.UserRepositoryImplTest.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -34,16 +35,11 @@ class UserRepositoryImplTest {
         public UserRepositoryImpl userRepository(UserJpaRepository userJpaRepository){
             return new UserRepositoryImpl(userJpaRepository);
         }
-
-        @Bean
-        public BCryptPasswordEncoder passwordEncoder(){
-            return new BCryptPasswordEncoder();
-        }
     }
 
     static String DATABASE_NAME = "test";
     static String DATABASE_USERNAME = "test";
-    static String DATABASE_PASSWORD = "test";
+    static String DATABASE_PASSWORD = UUID.randomUUID().toString();
     static String TEST_EMAIL = "test@gmail.com";
     static String FAKE_EMAIL = "fake@gmail.com";
     static String ENCODED_PASSWORD = "encodedPassword";
@@ -59,17 +55,14 @@ class UserRepositoryImplTest {
     @Autowired
     UserRepositoryImpl userRepository;
 
-    @Autowired
-    BCryptPasswordEncoder passwordEncoder;
 
     @Test
     @DisplayName("findUser Test using TestEmail")
     void findUserTestEmail(){
         Optional<User> optionalUser = userRepository.findUser(TEST_EMAIL);
-        User user = optionalUser.orElse(null);
 
-        assertThat(optionalUser.isPresent()).isTrue();
-        assertThat(user.getEmail()).isEqualTo(TEST_EMAIL);
+        assertThat(optionalUser).isPresent()
+                .hasValueSatisfying(user -> assertThat(user.getEmail()).isEqualTo(TEST_EMAIL));
     }
 
     @Test
@@ -85,10 +78,10 @@ class UserRepositoryImplTest {
     void save() {
         userRepository.save(TEST_EMAIL,ENCODED_PASSWORD);
         Optional<User> optionalUser = userRepository.findUser(TEST_EMAIL);
-        User user = optionalUser.orElse(null);
 
-        assertThat(optionalUser.isPresent()).isTrue();
-        assertThat(user.getEmail()).isEqualTo(TEST_EMAIL);
-        assertThat(user.getPassword()).isEqualTo(ENCODED_PASSWORD);
+        assertThat(optionalUser).isPresent()
+                .hasValueSatisfying(user -> assertThat(user)
+                        .extracting(User::getEmail, User::getPassword)
+                        .containsExactly(TEST_EMAIL, ENCODED_PASSWORD));
     }
 }
