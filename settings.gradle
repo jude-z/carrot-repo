@@ -1,4 +1,6 @@
 include 'api-server'
 include 'ffmpeg-server'
 include 'chat-server'
-includeBuild 'build-src'
+include 'web'
+include 'service'
+include 'infra'
