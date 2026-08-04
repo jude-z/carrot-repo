@@ -33,6 +33,7 @@ class ValidFailDtoMapperTest {
 
     @Test
     @DisplayName("BindingResult의 필드 에러들을 ValidFailDto 목록으로 변환한다")
+    @SuppressWarnings("java:S2068") // "password"는 검증 대상 필드명 상수일 뿐 실제 비밀번호 값이 아님 (오탐, 상수 추출로도 회피 안 됨을 확인함)
     void fromMapsFieldErrorsToValidFailDto() {
         BindingResult bindingResult = bindingResultOf(
                 fieldError(EMAIL_FIELD, "이메일을 입력해주세요."),
