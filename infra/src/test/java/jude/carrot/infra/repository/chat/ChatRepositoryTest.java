@@ -87,14 +87,14 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅 참여자를 여러 명 저장하면 각각 id가 채번된다")
-    void saveAll_assignsIdToEachParticipant() {
+    void saveAllAssignsIdToEachParticipant() {
         assertThat(creator.getId()).isNotNull();
         assertThat(opponent.getId()).isNotNull();
     }
 
     @Test
     @DisplayName("채팅방을 저장하면 id가 채번된다")
-    void save_chatRoom_assignsId() {
+    void saveChatRoomAssignsId() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
 
         chatRepository.save(chatRoom);
@@ -104,7 +104,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅 메시지를 저장하면 id가 채번된다")
-    void save_chatMessage_assignsId() {
+    void saveChatMessageAssignsId() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
@@ -116,7 +116,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("읽음 상태를 저장하면 id가 채번된다")
-    void save_readStatus_assignsId() {
+    void saveReadStatusAssignsId() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
@@ -130,7 +130,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅방 생성자가 조회하면 채팅방이 반환된다")
-    void fetchChatRoomByUserIdAndChatRoomId_success_whenCreator() {
+    void fetchChatRoomByUserIdAndChatRoomIdSuccessWhenCreator() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
@@ -144,7 +144,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅방 상대방이 조회해도 채팅방이 반환된다")
-    void fetchChatRoomByUserIdAndChatRoomId_success_whenOpponent() {
+    void fetchChatRoomByUserIdAndChatRoomIdSuccessWhenOpponent() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
@@ -157,7 +157,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅방과 무관한 회원이 조회하면 비어있다")
-    void fetchChatRoomByUserIdAndChatRoomId_fail_whenNotParticipant() {
+    void fetchChatRoomByUserIdAndChatRoomIdFailWhenNotParticipant() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         User strangerUser = userJpaRepository.save(UserFactory.create("stranger@carrot.com"));
@@ -171,7 +171,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅방의 메시지를 join fetch로 조회하면 채팅방과 작성자가 함께 조회된다")
-    void joinFetchChatMessage_success() {
+    void joinFetchChatMessageSuccess() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
@@ -190,7 +190,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("채팅방에 메시지가 여러 건이면 가장 최근에 저장된 메시지만 조회된다")
-    void joinFetchChatMessage_success_returnsMostRecentOnly() {
+    void joinFetchChatMessageSuccessReturnsMostRecentOnly() {
         ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
         chatRepository.save(chatRoom);
         ChatMessage firstMessage = ChatFactory.createChatMessage("first", chatRoom, creator);
@@ -208,7 +208,7 @@ class ChatRepositoryTest {
 
     @Test
     @DisplayName("메시지가 없는 채팅방을 조회하면 비어있다")
-    void joinFetchChatMessage_fail_whenNotExist() {
+    void joinFetchChatMessageFailWhenNotExist() {
         Optional<ChatMessage> found = chatRepository.joinFetchChatMessage(-1L);
 
         assertThat(found).isEmpty();

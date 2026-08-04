@@ -11,7 +11,7 @@ class ApiResponseTest {
 
     @Test
     @DisplayName("successFrom(data)는 SUCCESS 코드와 데이터를 담는다")
-    void successFrom_withData() {
+    void successFromWithData() {
         ApiResponse<String> response = ApiResponse.successFrom("hello");
 
         assertThat(response.getData()).isEqualTo("hello");
@@ -21,7 +21,7 @@ class ApiResponseTest {
 
     @Test
     @DisplayName("successFrom()은 데이터 없이 SUCCESS 코드만 담는다")
-    void successFrom_withoutData() {
+    void successFromWithoutData() {
         ApiResponse<Void> response = ApiResponse.successFrom();
 
         assertThat(response.getData()).isNull();
@@ -31,7 +31,7 @@ class ApiResponseTest {
 
     @Test
     @DisplayName("failFrom(data, code, message)은 지정한 코드/메시지/데이터를 담는다")
-    void failFrom_withData() {
+    void failFromWithData() {
         ApiResponse<String> response =
                 ApiResponse.failFrom("field error", VALID_FAIL.getCode(), VALID_FAIL.getDetailMessage());
 
@@ -42,7 +42,7 @@ class ApiResponseTest {
 
     @Test
     @DisplayName("failFrom(code, message)은 데이터 없이 코드/메시지만 담는다")
-    void failFrom_withoutData() {
+    void failFromWithoutData() {
         ApiResponse<Void> response = ApiResponse.failFrom(VALID_FAIL.getCode(), VALID_FAIL.getDetailMessage());
 
         assertThat(response.getData()).isNull();

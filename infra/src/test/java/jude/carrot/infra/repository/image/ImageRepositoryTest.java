@@ -3,7 +3,6 @@ package jude.carrot.infra.repository.image;
 import jude.carrot.infra.InfraTestConfig;
 import jude.carrot.infra.entity.image.ThumbnailImage;
 import jude.carrot.infra.fixture.image.ImageFactory;
-import jude.carrot.infra.repository.image.jpa.PostImageJpaRepository;
 import jude.carrot.infra.repository.image.jpa.ThumbnailImageJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +31,8 @@ class ImageRepositoryTest {
     @TestConfiguration
     static class ImageRepositoryConfig{
         @Bean
-        ImageRepository imageRepository(ThumbnailImageJpaRepository thumbnailImageJpaRepository,
-                                        PostImageJpaRepository postImageJpaRepository){
-            return new ImageRepositoryImpl(thumbnailImageJpaRepository,postImageJpaRepository);
+        ImageRepository imageRepository(ThumbnailImageJpaRepository thumbnailImageJpaRepository){
+            return new ImageRepositoryImpl(thumbnailImageJpaRepository);
         }
     }
 

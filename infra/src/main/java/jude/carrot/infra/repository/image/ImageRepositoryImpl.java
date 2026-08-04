@@ -1,7 +1,6 @@
 package jude.carrot.infra.repository.image;
 
 import jude.carrot.infra.entity.image.ThumbnailImage;
-import jude.carrot.infra.repository.image.jpa.PostImageJpaRepository;
 import jude.carrot.infra.repository.image.jpa.ThumbnailImageJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Repository;
 public class ImageRepositoryImpl implements ImageRepository {
 
     private final ThumbnailImageJpaRepository thumbnailImageJpaRepository;
-    private final PostImageJpaRepository postImageJpaRepository;
 
     @Override
     public ThumbnailImage save(ThumbnailImage image) {

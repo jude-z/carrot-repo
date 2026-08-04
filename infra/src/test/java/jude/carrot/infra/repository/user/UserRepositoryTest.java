@@ -58,7 +58,7 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("회원을 저장하면 id가 채번된다")
-    void save_assignsId() {
+    void saveAssignsId() {
         User user = UserFactory.create(TEST_EMAIL);
 
         userRepository.save(user);
@@ -68,7 +68,7 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("존재하는 이메일로 조회하면 회원이 반환된다")
-    void findByEmail_success() {
+    void findByEmailSuccess() {
         User user = UserFactory.create(TEST_EMAIL);
         userRepository.save(user);
         entityManager.flush();
@@ -82,7 +82,7 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("존재하지 않는 이메일로 조회하면 비어있다")
-    void findByEmail_fail_whenNotExist() {
+    void findByEmailFailWhenNotExist() {
         Optional<User> found = userRepository.findByEmail(FAKE_EMAIL);
 
         assertThat(found).isEmpty();
@@ -90,7 +90,7 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("존재하는 회원은 id로 조회된다")
-    void findById_success() {
+    void findByIdSuccess() {
         User user = UserFactory.create(TEST_EMAIL);
         userRepository.save(user);
         entityManager.flush();
@@ -104,7 +104,7 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("존재하지 않는 id로 조회하면 비어있다")
-    void findById_fail_whenNotExist() {
+    void findByIdFailWhenNotExist() {
         Optional<User> found = userRepository.findById(-1L);
 
         assertThat(found).isEmpty();

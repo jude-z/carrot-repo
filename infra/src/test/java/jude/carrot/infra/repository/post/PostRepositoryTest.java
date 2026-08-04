@@ -74,7 +74,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("게시글을 저장하면 id가 채번된다")
-    void save_assignsId() {
+    void saveAssignsId() {
         Post post = PostFactory.create(user);
 
         postRepository.save(post);
@@ -84,7 +84,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("존재하는 게시글은 findById로 조회된다")
-    void findById_success() {
+    void findByIdSuccess() {
         Post post = PostFactory.create(user);
         postRepository.save(post);
         entityManager.flush();
@@ -98,7 +98,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("존재하지 않는 게시글을 findById로 조회하면 비어있다")
-    void findById_fail_whenNotExist() {
+    void findByIdFailWhenNotExist() {
         Optional<Post> found = postRepository.findById(-1L);
 
         assertThat(found).isEmpty();
@@ -106,7 +106,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("존재하는 게시글은 작성자/썸네일/이미지가 함께 조회된다")
-    void fetchJoinByPostId_success() {
+    void fetchJoinByPostIdSuccess() {
         Post post = PostFactory.createWithImages(user, "http://image.com/thumb.png", List.of("http://image.com/1.png", "http://image.com/2.png"));
         postRepository.save(post);
         entityManager.flush();
@@ -124,7 +124,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("존재하지 않는 게시글을 fetchJoinByPostId로 조회하면 비어있다")
-    void fetchJoinByPostId_fail_whenNotExist() {
+    void fetchJoinByPostIdFailWhenNotExist() {
         Optional<Post> found = postRepository.fetchJoinByPostId(-1L);
 
         assertThat(found).isEmpty();
@@ -132,7 +132,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("게시글 목록을 페이지 단위로 조회한다")
-    void fetchJoinList_success() {
+    void fetchJoinListSuccess() {
         Post post1 = PostFactory.createWithImages(user, "http://image.com/thumb1.png", List.of("http://image.com/1.png"));
         Post post2 = PostFactory.createWithImages(user, "http://image.com/thumb2.png", List.of("http://image.com/2.png"));
         postRepository.save(post1);
@@ -149,7 +149,7 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("게시글을 삭제하면 더 이상 조회되지 않는다")
-    void deleteById_success() {
+    void deleteByIdSuccess() {
         Post post = PostFactory.createWithImages(user, "http://image.com/thumb.png", List.of("http://image.com/1.png"));
         postRepository.save(post);
         entityManager.flush();

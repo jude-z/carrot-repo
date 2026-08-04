@@ -108,7 +108,7 @@ class SecurityWebMvcTest {
 
     @Test
     @DisplayName("올바른 이메일/비밀번호로 로그인하면 세션 쿠키와 함께 성공 응답을 반환하고, Redis에 인증 세션이 실제로 저장된다")
-    void login_success() throws Exception {
+    void loginSuccess() throws Exception {
         stubUserFound();
         when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
 
@@ -136,7 +136,7 @@ class SecurityWebMvcTest {
 
     @Test
     @DisplayName("존재하지 않는 이메일로 로그인하면 인증 실패(401, AF) 응답을 반환한다")
-    void login_fail_whenUserNotFound() throws Exception {
+    void loginFailWhenUserNotFound() throws Exception {
         mockMvc.perform(post(LOGIN_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -150,7 +150,7 @@ class SecurityWebMvcTest {
 
     @Test
     @DisplayName("비밀번호가 일치하지 않으면 인증 실패(401, AF) 응답을 반환한다")
-    void login_fail_whenPasswordMismatch() throws Exception {
+    void loginFailWhenPasswordMismatch() throws Exception {
         stubUserFound();
         // matches()는 스텁하지 않아 기본값(false)을 반환 -> 비밀번호 불일치 상황을 그대로 재현
 
@@ -166,7 +166,7 @@ class SecurityWebMvcTest {
 
     @Test
     @DisplayName("검증에 실패하면 필터가 예외를 던지고 잡아서 검증 실패(400, VF) 응답과 실패 필드 목록을 반환한다")
-    void login_fail_whenRequestNotValid() throws Exception {
+    void loginFailWhenRequestNotValid() throws Exception {
         doAnswer(invocation -> {
             Errors errors = invocation.getArgument(1);
             errors.rejectValue("email", "invalid", "이메일 형식이 올바르지 않습니다.");
@@ -188,14 +188,14 @@ class SecurityWebMvcTest {
 
     @Test
     @DisplayName("세션 없이 화이트리스트 밖의 리소스에 접근하면 차단된다")
-    void anonymous_isBlocked_fromProtectedResource() throws Exception {
+    void anonymousIsBlockedFromProtectedResource() throws Exception {
         mockMvc.perform(get(PROTECTED_URL))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("로그인 성공 후 발급된 세션으로 요청하면 인증된 사용자로 필터 체인을 통과한다")
-    void authenticatedSession_passesThroughSecurityFilterChain() throws Exception {
+    void authenticatedSessionPassesThroughSecurityFilterChain() throws Exception {
         stubUserFound();
         when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
 

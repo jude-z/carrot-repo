@@ -16,6 +16,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 class ValidFailDtoMapperTest {
 
+    private static final String EMAIL_FIELD = "email";
+    private static final String INVALID_FIELD_NAME = "password";
+
     private BindingResult bindingResultOf(FieldError... errors) {
         BindingResult bindingResult = new MapBindingResult(Map.of(), "loginRequest");
         for (FieldError error : errors) {
@@ -30,10 +33,10 @@ class ValidFailDtoMapperTest {
 
     @Test
     @DisplayName("BindingResult의 필드 에러들을 ValidFailDto 목록으로 변환한다")
-    void from_mapsFieldErrorsToValidFailDto() {
+    void fromMapsFieldErrorsToValidFailDto() {
         BindingResult bindingResult = bindingResultOf(
-                fieldError("email", "이메일을 입력해주세요."),
-                fieldError("password", "비밀번호를 입력해주세요.")
+                fieldError(EMAIL_FIELD, "이메일을 입력해주세요."),
+                fieldError(INVALID_FIELD_NAME, "비밀번호를 입력해주세요.")
         );
 
         List<ValidFailDto> result = ValidFailDtoMapper.from(bindingResult);
@@ -41,14 +44,14 @@ class ValidFailDtoMapperTest {
         assertThat(result)
                 .extracting(ValidFailDto::getField, ValidFailDto::getMessage)
                 .containsExactlyInAnyOrder(
-                        tuple("email", "이메일을 입력해주세요."),
-                        tuple("password", "비밀번호를 입력해주세요.")
+                        tuple(EMAIL_FIELD, "이메일을 입력해주세요."),
+                        tuple(INVALID_FIELD_NAME, "비밀번호를 입력해주세요.")
                 );
     }
 
     @Test
     @DisplayName("필드 에러가 없으면 빈 목록을 반환한다")
-    void from_returnsEmptyList_whenNoErrors() {
+    void fromReturnsEmptyListWhenNoErrors() {
         BindingResult bindingResult = bindingResultOf();
 
         List<ValidFailDto> result = ValidFailDtoMapper.from(bindingResult);
