@@ -6,7 +6,11 @@ import jude.carrot.infra.entity.chat.ChatRoom;
 import jude.carrot.infra.entity.chat.ReadStatus;
 import jude.carrot.infra.entity.user.User;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public class ChatFactory {
+
+    private static final AtomicLong MESSAGE_ID_SEQUENCE = new AtomicLong(System.currentTimeMillis());
 
     private ChatFactory() {
     }
@@ -21,6 +25,7 @@ public class ChatFactory {
 
     public static ChatMessage createChatMessage(String content, ChatRoom chatRoom, ChatParticipant publishedBy) {
         return ChatMessage.builder()
+                .id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet()))
                 .content(content)
                 .chatRoom(chatRoom)
                 .publishedBy(publishedBy)

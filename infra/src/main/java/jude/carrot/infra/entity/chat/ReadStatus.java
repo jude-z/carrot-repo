@@ -39,4 +39,6 @@ public class ReadStatus {
                 .chatMessage(chatMessage)
                 .build();
     }
+
+
 }

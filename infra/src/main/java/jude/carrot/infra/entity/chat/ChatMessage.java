@@ -3,6 +3,8 @@ package jude.carrot.infra.entity.chat;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -11,11 +13,11 @@ import lombok.*;
 @Builder
 public class ChatMessage {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     private String content;
     @ManyToOne
     private ChatRoom chatRoom;
     @ManyToOne
     private ChatParticipant publishedBy;
+    private LocalDateTime publishedAt;
 }

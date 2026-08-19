@@ -12,6 +12,7 @@ public enum Status {
     USER_NOT_EXIST("UE", "user already exists", HttpStatus.BAD_REQUEST),
     VALID_FAIL("VF","valid fail",HttpStatus.BAD_REQUEST),
     PASSWORD_NOT_CORRECT("PNC", "password not correct", HttpStatus.BAD_REQUEST),
+    PASSWORD_CONFIRM_NOT_MATCH("PCM", "password and confirm password do not match", HttpStatus.BAD_REQUEST),
     AUTH_FAIL("AF","authentication fail",HttpStatus.UNAUTHORIZED),
     SECURITY_ERROR("SE","security error",HttpStatus.INTERNAL_SERVER_ERROR),
     UPDATE_USER_NOT_AUTHORIZE("NF", "cannot update other user", HttpStatus.UNAUTHORIZED),
