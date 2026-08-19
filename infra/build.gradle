@@ -1,5 +1,6 @@
 plugins {
     id("java-common-conventions")
+    id 'java-library'
 }
 
 repositories {
@@ -8,8 +9,9 @@ repositories {
 
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-json'
+    api 'org.springframework.boot:spring-boot-starter-data-redis'
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
