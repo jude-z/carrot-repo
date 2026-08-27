@@ -4,13 +4,15 @@ package jude.carrot.infra.repository.chat;
 import jude.carrot.infra.entity.chat.ChatMessage;
 import jude.carrot.infra.entity.chat.ChatParticipant;
 import jude.carrot.infra.entity.chat.ChatRoom;import jude.carrot.infra.entity.chat.ReadStatus;
+import jude.carrot.infra.repository.chat.dto.ChatMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ChatMessageElement;
+import jude.carrot.infra.repository.chat.dto.ChatRoomMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ReadStatusBulk;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
-
-import static jude.carrot.infra.repository.chat.dto.ChatDto.*;
 
 public interface ChatRepository {
     void save(ChatRoom chatRoom);

@@ -14,9 +14,9 @@ class ApiResponseTest {
     void successFromWithData() {
         ApiResponse<String> response = ApiResponse.successFrom("hello");
 
-        assertThat(response.getData()).isEqualTo("hello");
-        assertThat(response.getCode()).isEqualTo(SUCCESS.getCode());
-        assertThat(response.getDetailMessage()).isEqualTo(SUCCESS.getDetailMessage());
+        assertThat(response.data()).isEqualTo("hello");
+        assertThat(response.code()).isEqualTo(SUCCESS.getCode());
+        assertThat(response.detailMessage()).isEqualTo(SUCCESS.getDetailMessage());
     }
 
     @Test
@@ -24,9 +24,9 @@ class ApiResponseTest {
     void successFromWithoutData() {
         ApiResponse<Void> response = ApiResponse.successFrom();
 
-        assertThat(response.getData()).isNull();
-        assertThat(response.getCode()).isEqualTo(SUCCESS.getCode());
-        assertThat(response.getDetailMessage()).isEqualTo(SUCCESS.getDetailMessage());
+        assertThat(response.data()).isNull();
+        assertThat(response.code()).isEqualTo(SUCCESS.getCode());
+        assertThat(response.detailMessage()).isEqualTo(SUCCESS.getDetailMessage());
     }
 
     @Test
@@ -35,9 +35,9 @@ class ApiResponseTest {
         ApiResponse<String> response =
                 ApiResponse.failFrom("field error", VALID_FAIL.getCode(), VALID_FAIL.getDetailMessage());
 
-        assertThat(response.getData()).isEqualTo("field error");
-        assertThat(response.getCode()).isEqualTo(VALID_FAIL.getCode());
-        assertThat(response.getDetailMessage()).isEqualTo(VALID_FAIL.getDetailMessage());
+        assertThat(response.data()).isEqualTo("field error");
+        assertThat(response.code()).isEqualTo(VALID_FAIL.getCode());
+        assertThat(response.detailMessage()).isEqualTo(VALID_FAIL.getDetailMessage());
     }
 
     @Test
@@ -45,8 +45,8 @@ class ApiResponseTest {
     void failFromWithoutData() {
         ApiResponse<Void> response = ApiResponse.failFrom(VALID_FAIL.getCode(), VALID_FAIL.getDetailMessage());
 
-        assertThat(response.getData()).isNull();
-        assertThat(response.getCode()).isEqualTo(VALID_FAIL.getCode());
-        assertThat(response.getDetailMessage()).isEqualTo(VALID_FAIL.getDetailMessage());
+        assertThat(response.data()).isNull();
+        assertThat(response.code()).isEqualTo(VALID_FAIL.getCode());
+        assertThat(response.detailMessage()).isEqualTo(VALID_FAIL.getDetailMessage());
     }
 }

@@ -1,7 +1,9 @@
 package jude.carrot.infra.repository.chat;
 
-import jude.carrot.infra.repository.chat.dto.ChatDto;
-import jude.carrot.infra.repository.chat.dto.ChatDto.ReadStatusBulk;
+import jude.carrot.infra.repository.chat.dto.ChatMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ChatMessageElement;
+import jude.carrot.infra.repository.chat.dto.ChatRoomMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ReadStatusBulk;
 import jude.carrot.infra.repository.chat.jpa.ChatMessageJpaRepository;
 import jude.carrot.infra.repository.chat.jpa.ChatParticipantJpaRepository;
 import jude.carrot.infra.repository.chat.jpa.ChatRoomJpaRepository;
@@ -21,8 +23,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import static jude.carrot.infra.repository.chat.dto.ChatDto.*;
 
 
 @Repository
@@ -71,10 +71,10 @@ public class ChatRepositoryImpl implements ChatRepository {
         String sql = SqlGenerator.bulkReadStatueSql();
         jdbcTemplate.batchUpdate(sql, readStatuses,readStatuses.size(),
                 (ps, readStatus) -> {
-                    ps.setLong(1, readStatus.getChatParticipantId());
-                    ps.setString(2, readStatus.getChatMessageId());
-                    ps.setTimestamp(3, Timestamp.valueOf(readStatus.getCreateTime()));
-                    ps.setTimestamp(4, Timestamp.valueOf(readStatus.getUpdateTime()));
+                    ps.setLong(1, readStatus.chatParticipantId());
+                    ps.setString(2, readStatus.chatMessageId());
+                    ps.setTimestamp(3, Timestamp.valueOf(readStatus.createTime()));
+                    ps.setTimestamp(4, Timestamp.valueOf(readStatus.updateTime()));
                 }
             );
     }
@@ -84,8 +84,8 @@ public class ChatRepositoryImpl implements ChatRepository {
         String sql = SqlGenerator.bulkChatRoomMessageSql();
         jdbcTemplate.batchUpdate(sql, chatRoomMessageBulks, chatRoomMessageBulks.size(),
                 (ps, chatRoomMessage) -> {
-                    ps.setLong(1, chatRoomMessage.getChatRoomId());
-                    ps.setString(2, chatRoomMessage.getChatMessageId());
+                    ps.setLong(1, chatRoomMessage.chatRoomId());
+                    ps.setString(2, chatRoomMessage.chatMessageId());
                 }
             );
     }
@@ -95,10 +95,10 @@ public class ChatRepositoryImpl implements ChatRepository {
         String sql = SqlGenerator.bulkChatMessageSql();
         jdbcTemplate.batchUpdate(sql, chatMessageBulks, chatMessageBulks.size(),
                 (ps, chatMessage) -> {
-                    ps.setString(1, chatMessage.getId());
-                    ps.setString(2,chatMessage.getContent());
-                    ps.setLong(3,chatMessage.getPublishedById());
-                    ps.setTimestamp(4,Timestamp.valueOf(chatMessage.getPublishedAt()));
+                    ps.setString(1, chatMessage.id());
+                    ps.setString(2,chatMessage.content());
+                    ps.setLong(3,chatMessage.publishedById());
+                    ps.setTimestamp(4,Timestamp.valueOf(chatMessage.publishedAt()));
                 }
             );
 

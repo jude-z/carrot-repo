@@ -82,12 +82,12 @@ public class JsonAuthenticationFilter extends UsernamePasswordAuthenticationFilt
     }
     private String fetchUsername(LoginRequest loginRequest){
 
-        String email = loginRequest.getEmail();
+        String email = loginRequest.email();
         return StringUtils.hasText(email) ? email : "";
     }
 
     private String fetchPassword(LoginRequest loginRequest){
-        String password = loginRequest.getPassword();
+        String password = loginRequest.password();
         return StringUtils.hasText(password) ? password : "";
     }
 }

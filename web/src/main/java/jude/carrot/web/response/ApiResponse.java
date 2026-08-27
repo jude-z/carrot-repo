@@ -3,21 +3,20 @@ package jude.carrot.web.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
-import lombok.Getter;
 
 import static jude.carrot.service.status.Status.SUCCESS;
 
-
-@Getter
 @Builder
-public class ApiResponse <T>{
+public record ApiResponse<T>(
+        @JsonInclude(JsonInclude.Include.NON_NULL) T data,
+        String code,
+        String detailMessage
+) {
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private T data;
-    @Builder.Default
-    private String code = SUCCESS.getCode();
-    @Builder.Default
-    private String detailMessage = SUCCESS.getDetailMessage();
+    public ApiResponse {
+        if (code == null) code = SUCCESS.getCode();
+        if (detailMessage == null) detailMessage = SUCCESS.getDetailMessage();
+    }
 
     public static <T> ApiResponse<T> successFrom(T data){
         return ApiResponse.<T>builder()
@@ -44,6 +43,4 @@ public class ApiResponse <T>{
                 .detailMessage(detailMessage)
                 .build();
     }
-
-
 }

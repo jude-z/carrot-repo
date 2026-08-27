@@ -1,15 +1,12 @@
 package jude.carrot.web.dto;
 
-
 import lombok.Builder;
-import lombok.Getter;
 
-@Getter
 @Builder
-public class ValidFailDto {
-
-    private String field;
-    private String message;
+public record ValidFailDto(
+        String field,
+        String message
+) {
 
     public static ValidFailDto from(String field, String message){
         return ValidFailDto.builder()
@@ -17,5 +14,4 @@ public class ValidFailDto {
                 .message(message)
                 .build();
     }
-
 }

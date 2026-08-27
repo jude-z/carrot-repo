@@ -43,7 +43,7 @@ class ValidFailDtoMapperTest {
         List<ValidFailDto> result = ValidFailDtoMapper.from(bindingResult);
 
         assertThat(result)
-                .extracting(ValidFailDto::getField, ValidFailDto::getMessage)
+                .extracting(ValidFailDto::field, ValidFailDto::message)
                 .containsExactlyInAnyOrder(
                         tuple(EMAIL_FIELD, "이메일을 입력해주세요."),
                         tuple(INVALID_FIELD_NAME, "비밀번호를 입력해주세요.")

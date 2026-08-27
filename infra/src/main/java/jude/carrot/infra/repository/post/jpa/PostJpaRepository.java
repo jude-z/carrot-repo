@@ -2,7 +2,7 @@ package jude.carrot.infra.repository.post.jpa;
 
 
 import jude.carrot.infra.entity.post.Post;
-import jude.carrot.infra.repository.post.dto.PostDto;
+import jude.carrot.infra.repository.post.dto.PostElement;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,9 +19,9 @@ public interface PostJpaRepository extends JpaRepository<Post,Long> {
             "where p.id = :postId")
     Optional<Post> fetchJoinByPostId(@Param("postId") Long postId);
 
-    @Query(value = "select new jude.carrot.infra.repository.post.dto.PostDto$PostElement(" +
+    @Query(value = "select new jude.carrot.infra.repository.post.dto.PostElement(" +
             "p.id, p.title, p.price, p.address, p.createdBy.id, p.createdBy.email, p.thumbnailImage.url) " +
             "from Post p",
             countQuery = "select count(p) from Post p")
-    Page<PostDto.PostElement> fetchJoinList(Pageable pageable);
+    Page<PostElement> fetchJoinList(Pageable pageable);
 }

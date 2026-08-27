@@ -1,7 +1,7 @@
 package jude.carrot.infra.repository.post;
 
 import jude.carrot.infra.entity.post.Post;
-import jude.carrot.infra.repository.post.dto.PostDto;
+import jude.carrot.infra.repository.post.dto.PostElement;
 import jude.carrot.infra.repository.post.jpa.PostJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -9,8 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-
-import static jude.carrot.infra.repository.post.dto.PostDto.*;
 
 @Repository
 @RequiredArgsConstructor
