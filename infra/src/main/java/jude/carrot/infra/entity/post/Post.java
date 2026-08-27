@@ -1,8 +1,8 @@
 package jude.carrot.infra.entity.post;
 
 import jakarta.persistence.*;
-import jude.carrot.infra.entity.image.PostImage;
-import jude.carrot.infra.entity.image.ThumbnailImage;
+import jude.carrot.infra.entity.image.MultipleImage;
+import jude.carrot.infra.entity.image.SingleImage;
 import jude.carrot.infra.entity.user.Address;
 import jude.carrot.infra.entity.user.User;
 import lombok.*;
@@ -25,12 +25,12 @@ public class Post {
     @ManyToOne
     private User createdBy;
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    private ThumbnailImage thumbnailImage;
+    private SingleImage thumbnailImage;
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostImage> contentImages = new ArrayList<>();
+    private List<MultipleImage> contentImages = new ArrayList<>();
 
     @Builder
-    private Post(String title, String content, Integer price, Address address, User user, ThumbnailImage thumbnailImage, List<PostImage> contentImages){
+    private Post(String title, String content, Integer price, Address address, User user, SingleImage thumbnailImage, List<MultipleImage> contentImages){
         this.title = title;
         this.content = content;
         this.price = price;

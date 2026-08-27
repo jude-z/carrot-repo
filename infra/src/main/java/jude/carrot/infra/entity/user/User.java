@@ -1,7 +1,7 @@
 package jude.carrot.infra.entity.user;
 
 import jakarta.persistence.*;
-import jude.carrot.infra.entity.image.ThumbnailImage;
+import jude.carrot.infra.entity.image.SingleImage;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -24,7 +24,7 @@ public class User {
     private String password;
     private String nickname;
     @OneToOne
-    private ThumbnailImage image;
+    private SingleImage image;
     @Embedded
     private Address address;
     private boolean verified;
@@ -34,7 +34,7 @@ public class User {
     private LocalDateTime updateTime;
 
     @Builder
-    private User(String email, String password, String nickname, ThumbnailImage image, Address address
+    private User(String email, String password, String nickname, SingleImage image, Address address
             , LocalDateTime lastActiveTime, boolean verified){
         this.email = email;
         this.password = password;
@@ -44,7 +44,7 @@ public class User {
         this.verified = verified;
     }
 
-    public static User from(String email, String password, String nickname, ThumbnailImage image){
+    public static User from(String email, String password, String nickname, SingleImage image){
         return User.builder()
                 .email(email)
                 .password(password)

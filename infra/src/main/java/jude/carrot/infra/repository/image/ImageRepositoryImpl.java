@@ -1,18 +1,27 @@
 package jude.carrot.infra.repository.image;
 
-import jude.carrot.infra.entity.image.ThumbnailImage;
-import jude.carrot.infra.repository.image.jpa.ThumbnailImageJpaRepository;
+import jude.carrot.infra.entity.image.MultipleImage;
+import jude.carrot.infra.entity.image.SingleImage;
+import jude.carrot.infra.repository.image.jpa.MultipleImageJpaRepository;
+import jude.carrot.infra.repository.image.jpa.SingleImageJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
 public class ImageRepositoryImpl implements ImageRepository {
+    private final SingleImageJpaRepository singleImageJpaRepository;
 
-    private final ThumbnailImageJpaRepository thumbnailImageJpaRepository;
+    private final MultipleImageJpaRepository multipleImageJpaRepository;
+    @Override
+    public SingleImage save(SingleImage image) {
+        return singleImageJpaRepository.save(image);
+    }
 
     @Override
-    public ThumbnailImage save(ThumbnailImage image) {
-        return thumbnailImageJpaRepository.save(image);
+    public void saveAll(List<MultipleImage> multipleImages) {
+        multipleImageJpaRepository.saveAll(multipleImages);
     }
 }
