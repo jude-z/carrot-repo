@@ -2,8 +2,8 @@ package jude.carrot.infra.repository.user;
 
 import jude.carrot.infra.InfraTestConfig;
 import jude.carrot.infra.entity.user.User;
-import jude.carrot.infra.fixture.user.UserFactory;
 import jude.carrot.infra.repository.user.jpa.UserJpaRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,24 +56,28 @@ class UserRepositoryTest {
     @Autowired
     TestEntityManager entityManager;
 
+    User user;
+
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .email(TEST_EMAIL)
+                .password("password")
+                .build();
+        userRepository.save(user);
+        entityManager.flush();
+        entityManager.clear();
+    }
+
     @Test
     @DisplayName("회원을 저장하면 id가 채번된다")
     void saveAssignsId() {
-        User user = UserFactory.create(TEST_EMAIL);
-
-        userRepository.save(user);
-
         assertThat(user.getId()).isNotNull();
     }
 
     @Test
     @DisplayName("존재하는 이메일로 조회하면 회원이 반환된다")
     void findByEmailSuccess() {
-        User user = UserFactory.create(TEST_EMAIL);
-        userRepository.save(user);
-        entityManager.flush();
-        entityManager.clear();
-
         Optional<User> found = userRepository.findByEmail(TEST_EMAIL);
 
         assertThat(found).isPresent()
@@ -91,11 +95,6 @@ class UserRepositoryTest {
     @Test
     @DisplayName("존재하는 회원은 id로 조회된다")
     void findByIdSuccess() {
-        User user = UserFactory.create(TEST_EMAIL);
-        userRepository.save(user);
-        entityManager.flush();
-        entityManager.clear();
-
         Optional<User> found = userRepository.findById(user.getId());
 
         assertThat(found).isPresent()

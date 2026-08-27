@@ -1,9 +1,10 @@
 package jude.carrot.infra.repository.image;
 
 import jude.carrot.infra.InfraTestConfig;
-import jude.carrot.infra.entity.image.ThumbnailImage;
-import jude.carrot.infra.fixture.image.ImageFactory;
-import jude.carrot.infra.repository.image.jpa.ThumbnailImageJpaRepository;
+import jude.carrot.infra.entity.image.MultipleImage;
+import jude.carrot.infra.entity.image.SingleImage;
+import jude.carrot.infra.repository.image.jpa.MultipleImageJpaRepository;
+import jude.carrot.infra.repository.image.jpa.SingleImageJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -17,9 +18,11 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.UUID;
 
 import static jude.carrot.infra.repository.image.ImageRepositoryTest.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create")
 @ContextConfiguration(classes = InfraTestConfig.class)
@@ -31,8 +34,9 @@ class ImageRepositoryTest {
     @TestConfiguration
     static class ImageRepositoryConfig{
         @Bean
-        ImageRepository imageRepository(ThumbnailImageJpaRepository thumbnailImageJpaRepository){
-            return new ImageRepositoryImpl(thumbnailImageJpaRepository);
+        ImageRepository imageRepository(SingleImageJpaRepository singleImageJpaRepository,
+                                        MultipleImageJpaRepository multipleImageJpaRepository){
+            return new ImageRepositoryImpl(singleImageJpaRepository, multipleImageJpaRepository);
         }
     }
 
@@ -51,8 +55,23 @@ class ImageRepositoryTest {
     ImageRepository imageRepository;
 
     @Test
-    void saveThumbnailImage() {
-        ThumbnailImage thumbnailImage = ImageFactory.create(TEST_URL);
-        imageRepository.save(thumbnailImage);
+    void saveSingleImage() {
+        SingleImage singleImage = SingleImage.builder()
+                .url(TEST_URL)
+                .build();
+
+        imageRepository.save(singleImage);
+    }
+
+    @Test
+    void saveAllAssignsIdToEachMultipleImage() {
+        List<MultipleImage> multipleImages = List.of(
+                MultipleImage.from(TEST_URL + "/1"),
+                MultipleImage.from(TEST_URL + "/2")
+        );
+
+        imageRepository.saveAll(multipleImages);
+
+        assertThat(multipleImages).allSatisfy(image -> assertThat(image.getId()).isNotNull());
     }
 }

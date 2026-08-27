@@ -1,11 +1,12 @@
 package jude.carrot.infra.repository.post;
 
 import jude.carrot.infra.InfraTestConfig;
+import jude.carrot.infra.entity.image.MultipleImage;
+import jude.carrot.infra.entity.image.SingleImage;
 import jude.carrot.infra.entity.post.Post;
+import jude.carrot.infra.entity.user.Address;
 import jude.carrot.infra.entity.user.User;
-import jude.carrot.infra.fixture.post.PostFactory;
-import jude.carrot.infra.fixture.user.UserFactory;
-import jude.carrot.infra.repository.post.dto.PostDto.PostElement;
+import jude.carrot.infra.repository.post.dto.PostElement;
 import jude.carrot.infra.repository.post.jpa.PostJpaRepository;
 import jude.carrot.infra.repository.user.jpa.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,13 +71,23 @@ class PostRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        user = userJpaRepository.save(UserFactory.create("carrot@carrot.com"));
+        user = userJpaRepository.save(User.builder()
+                .email("carrot@carrot.com")
+                .password("password")
+                .build());
     }
 
     @Test
     @DisplayName("게시글을 저장하면 id가 채번된다")
     void saveAssignsId() {
-        Post post = PostFactory.create(user);
+        Post post = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .contentImages(new ArrayList<>())
+                .build();
 
         postRepository.save(post);
 
@@ -85,7 +97,14 @@ class PostRepositoryTest {
     @Test
     @DisplayName("존재하는 게시글은 findById로 조회된다")
     void findByIdSuccess() {
-        Post post = PostFactory.create(user);
+        Post post = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .contentImages(new ArrayList<>())
+                .build();
         postRepository.save(post);
         entityManager.flush();
         entityManager.clear();
@@ -107,7 +126,17 @@ class PostRepositoryTest {
     @Test
     @DisplayName("존재하는 게시글은 작성자/썸네일/이미지가 함께 조회된다")
     void fetchJoinByPostIdSuccess() {
-        Post post = PostFactory.createWithImages(user, "http://image.com/thumb.png", List.of("http://image.com/1.png", "http://image.com/2.png"));
+        Post post = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .thumbnailImage(SingleImage.from("http://image.com/thumb.png"))
+                .contentImages(new ArrayList<>())
+                .build();
+        List<String> contentImageUrls = List.of("http://image.com/1.png", "http://image.com/2.png");
+        post.setContentImages(contentImageUrls.stream().map(url -> MultipleImage.from(url, post)).toList());
         postRepository.save(post);
         entityManager.flush();
         entityManager.clear();
@@ -133,8 +162,26 @@ class PostRepositoryTest {
     @Test
     @DisplayName("게시글 목록을 페이지 단위로 조회한다")
     void fetchJoinListSuccess() {
-        Post post1 = PostFactory.createWithImages(user, "http://image.com/thumb1.png", List.of("http://image.com/1.png"));
-        Post post2 = PostFactory.createWithImages(user, "http://image.com/thumb2.png", List.of("http://image.com/2.png"));
+        Post post1 = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .thumbnailImage(SingleImage.from("http://image.com/thumb1.png"))
+                .contentImages(new ArrayList<>())
+                .build();
+        post1.setContentImages(List.of("http://image.com/1.png").stream().map(url -> MultipleImage.from(url, post1)).toList());
+        Post post2 = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .thumbnailImage(SingleImage.from("http://image.com/thumb2.png"))
+                .contentImages(new ArrayList<>())
+                .build();
+        post2.setContentImages(List.of("http://image.com/2.png").stream().map(url -> MultipleImage.from(url, post2)).toList());
         postRepository.save(post1);
         postRepository.save(post2);
         entityManager.flush();
@@ -143,14 +190,23 @@ class PostRepositoryTest {
         Page<PostElement> page = postRepository.fetchJoinList(PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(2);
-        assertThat(page.getContent()).extracting(PostElement::getCreatedByEmail)
+        assertThat(page.getContent()).extracting(PostElement::createdByEmail)
                 .containsOnly(user.getEmail());
     }
 
     @Test
     @DisplayName("게시글을 삭제하면 더 이상 조회되지 않는다")
     void deleteByIdSuccess() {
-        Post post = PostFactory.createWithImages(user, "http://image.com/thumb.png", List.of("http://image.com/1.png"));
+        Post post = Post.builder()
+                .title("title")
+                .content("content")
+                .price(10000)
+                .address(Address.from("서울시", "강남구", "역삼동"))
+                .user(user)
+                .thumbnailImage(SingleImage.from("http://image.com/thumb.png"))
+                .contentImages(new ArrayList<>())
+                .build();
+        post.setContentImages(List.of("http://image.com/1.png").stream().map(url -> MultipleImage.from(url, post)).toList());
         postRepository.save(post);
         entityManager.flush();
         Long postId = post.getId();

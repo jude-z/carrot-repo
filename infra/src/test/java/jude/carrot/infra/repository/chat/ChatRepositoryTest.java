@@ -6,12 +6,10 @@ import jude.carrot.infra.entity.chat.ChatParticipant;
 import jude.carrot.infra.entity.chat.ChatRoom;
 import jude.carrot.infra.entity.chat.ReadStatus;
 import jude.carrot.infra.entity.user.User;
-import jude.carrot.infra.fixture.chat.ChatFactory;
-import jude.carrot.infra.fixture.user.UserFactory;
-import jude.carrot.infra.repository.chat.dto.ChatDto.ChatMessageBulk;
-import jude.carrot.infra.repository.chat.dto.ChatDto.ChatMessageElement;
-import jude.carrot.infra.repository.chat.dto.ChatDto.ChatRoomMessageBulk;
-import jude.carrot.infra.repository.chat.dto.ChatDto.ReadStatusBulk;
+import jude.carrot.infra.repository.chat.dto.ChatMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ChatMessageElement;
+import jude.carrot.infra.repository.chat.dto.ChatRoomMessageBulk;
+import jude.carrot.infra.repository.chat.dto.ReadStatusBulk;
 import jude.carrot.infra.repository.chat.jpa.ChatMessageJpaRepository;
 import jude.carrot.infra.repository.chat.jpa.ChatParticipantJpaRepository;
 import jude.carrot.infra.repository.chat.jpa.ChatRoomJpaRepository;
@@ -40,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static jude.carrot.infra.repository.chat.ChatRepositoryTest.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +66,7 @@ class ChatRepositoryTest {
     static final String DATABASE_NAME = "test";
     static final String DATABASE_USERNAME = "test";
     static final String DATABASE_PASSWORD = UUID.randomUUID().toString();
+    static final AtomicLong MESSAGE_ID_SEQUENCE = new AtomicLong(System.currentTimeMillis());
 
     @Container
     @ServiceConnection
@@ -91,10 +91,10 @@ class ChatRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        creatorUser = userJpaRepository.save(UserFactory.create("creator@carrot.com"));
-        opponentUser = userJpaRepository.save(UserFactory.create("opponent@carrot.com"));
-        creator = ChatFactory.createParticipant(creatorUser);
-        opponent = ChatFactory.createParticipant(opponentUser);
+        creatorUser = userJpaRepository.save(User.builder().email("creator@carrot.com").password("password").build());
+        opponentUser = userJpaRepository.save(User.builder().email("opponent@carrot.com").password("password").build());
+        creator = ChatParticipant.from(creatorUser);
+        opponent = ChatParticipant.from(opponentUser);
         chatRepository.saveAll(creator, opponent);
     }
 
@@ -108,7 +108,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방을 저장하면 id가 채번된다")
     void saveChatRoomAssignsId() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
 
         chatRepository.save(chatRoom);
 
@@ -118,9 +118,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅 메시지를 저장하면 애플리케이션이 부여한 id로 조회된다")
     void saveChatMessageSuccess() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
+        ChatMessage chatMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("hello").chatRoom(chatRoom).publishedBy(creator).build();
         String messageId = chatMessage.getId();
 
         chatRepository.save(chatMessage);
@@ -135,11 +135,11 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("읽음 상태를 저장하면 id가 채번된다")
     void saveReadStatusAssignsId() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
+        ChatMessage chatMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("hello").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(chatMessage);
-        ReadStatus readStatus = ChatFactory.createReadStatus(opponent, chatMessage);
+        ReadStatus readStatus = ReadStatus.from(opponent, chatMessage);
 
         chatRepository.save(readStatus);
 
@@ -149,7 +149,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방 생성자가 조회하면 채팅방이 반환된다")
     void fetchChatRoomByUserIdAndChatRoomIdSuccessWhenCreator() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -163,7 +163,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방 상대방이 조회해도 채팅방이 반환된다")
     void fetchChatRoomByUserIdAndChatRoomIdSuccessWhenOpponent() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -176,9 +176,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방과 무관한 회원이 조회하면 비어있다")
     void fetchChatRoomByUserIdAndChatRoomIdFailWhenNotParticipant() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        User strangerUser = userJpaRepository.save(UserFactory.create("stranger@carrot.com"));
+        User strangerUser = userJpaRepository.save(User.builder().email("stranger@carrot.com").password("password").build());
         entityManager.flush();
         entityManager.clear();
 
@@ -190,9 +190,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방의 메시지를 join fetch로 조회하면 채팅방과 작성자가 함께 조회된다")
     void joinFetchChatMessageSuccess() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
+        ChatMessage chatMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("hello").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(chatMessage);
         entityManager.flush();
         entityManager.clear();
@@ -209,11 +209,11 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방에 메시지가 여러 건이면 가장 최근에 저장된 메시지만 조회된다")
     void joinFetchChatMessageSuccessReturnsMostRecentOnly() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage firstMessage = ChatFactory.createChatMessage("first", chatRoom, creator);
+        ChatMessage firstMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("first").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(firstMessage);
-        ChatMessage secondMessage = ChatFactory.createChatMessage("second", chatRoom, opponent);
+        ChatMessage secondMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("second").chatRoom(chatRoom).publishedBy(opponent).build();
         chatRepository.save(secondMessage);
         entityManager.flush();
         entityManager.clear();
@@ -255,7 +255,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("메시지를 벌크로 채팅방에 연결하면 채팅방이 설정된다")
     void bulkChatRoomMessageLinksMessageToChatRoom() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         String messageId = UUID.randomUUID().toString();
         chatRepository.bulkChatMessage(List.of(ChatMessageBulk.builder()
@@ -279,9 +279,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("읽음 상태를 벌크로 저장하면 읽음 상태가 채번된다")
     void bulkReadStatusInsertsReadStatus() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
+        ChatMessage chatMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("hello").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(chatMessage);
         entityManager.flush();
         LocalDateTime now = LocalDateTime.now();
@@ -303,11 +303,11 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방의 메시지를 최신순으로 페이지 단위 조회한다")
     void fetchReturnsMessagesForChatRoomOrderedByNewest() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage first = ChatFactory.createChatMessage("first", chatRoom, creator);
+        ChatMessage first = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("first").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(first);
-        ChatMessage second = ChatFactory.createChatMessage("second", chatRoom, opponent);
+        ChatMessage second = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("second").chatRoom(chatRoom).publishedBy(opponent).build();
         chatRepository.save(second);
         entityManager.flush();
         entityManager.clear();
@@ -315,14 +315,14 @@ class ChatRepositoryTest {
         Page<ChatMessageElement> page = chatRepository.fetch(PageRequest.of(0, 10), chatRoom.getId());
 
         assertThat(page.getTotalElements()).isEqualTo(2);
-        assertThat(page.getContent()).extracting(ChatMessageElement::getContent)
+        assertThat(page.getContent()).extracting(ChatMessageElement::content)
                 .containsExactly("second", "first");
     }
 
     @Test
     @DisplayName("메시지가 없는 채팅방을 페이지 조회하면 빈 페이지가 반환된다")
     void fetchReturnsEmptyPageWhenNoMessages() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -336,7 +336,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("id로 채팅방을 조회하면 반환된다")
     void fetchChatRoomSuccess() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -358,7 +358,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("생성자가 채팅 참여자를 조회하면 본인의 참여자 정보가 반환된다")
     void fetchChatParticipantSuccessWhenCreator() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -372,7 +372,7 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("상대방이 채팅 참여자를 조회하면 본인의 참여자 정보가 반환된다")
     void fetchChatParticipantSuccessWhenOpponent() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
         entityManager.flush();
         entityManager.clear();
@@ -386,9 +386,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("채팅방과 무관한 회원이 참여자를 조회하면 비어있다")
     void fetchChatParticipantFailWhenNotParticipant() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        User strangerUser = userJpaRepository.save(UserFactory.create("stranger2@carrot.com"));
+        User strangerUser = userJpaRepository.save(User.builder().email("stranger2@carrot.com").password("password").build());
         entityManager.flush();
         entityManager.clear();
 
@@ -400,9 +400,9 @@ class ChatRepositoryTest {
     @Test
     @DisplayName("id로 채팅 메시지를 조회하면 반환된다")
     void fetchChatMessageSuccess() {
-        ChatRoom chatRoom = ChatFactory.createChatRoom("title", creator, opponent);
+        ChatRoom chatRoom = ChatRoom.from("title", creator, opponent);
         chatRepository.save(chatRoom);
-        ChatMessage chatMessage = ChatFactory.createChatMessage("hello", chatRoom, creator);
+        ChatMessage chatMessage = ChatMessage.builder().id(String.valueOf(MESSAGE_ID_SEQUENCE.incrementAndGet())).content("hello").chatRoom(chatRoom).publishedBy(creator).build();
         chatRepository.save(chatMessage);
         entityManager.flush();
         entityManager.clear();
