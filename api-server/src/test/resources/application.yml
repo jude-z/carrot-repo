@@ -3,3 +3,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+jude:
+  kakao-token: 3fcb9e161fc8b777cba9f787b4da7765
+  kakao-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json

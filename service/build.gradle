@@ -1,0 +1,8 @@
+plugins {
+    id("java-common-conventions")
+    id 'java-library'
+}
+
+dependencies {
+    api 'org.springframework:spring-web'
+}

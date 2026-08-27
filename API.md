@@ -38,12 +38,7 @@
 ```json
 {
   "code": "SUCCESS",
-  "data": {
-    "userId": 1001,
-    "accessToken": "eyJ...",
-    "refreshToken": "dGhp...",
-    "expire": 3600
-  }
+  "detailMessage" : "login success"
 }
 ```
 
