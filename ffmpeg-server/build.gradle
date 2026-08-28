@@ -1,3 +1,11 @@
 plugins {
     id("java-common-conventions")
 }
+repositories {
+    mavenCentral()
+}
+dependencies {
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-redis-spring:7.7.0'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+    implementation project(':web')
+}
