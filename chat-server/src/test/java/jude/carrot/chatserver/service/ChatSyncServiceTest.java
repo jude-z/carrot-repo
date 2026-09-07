@@ -4,8 +4,6 @@ import jude.carrot.infra.repository.chat.ChatRepository;
 import jude.carrot.infra.repository.chat.dto.ChatMessageBulk;
 import jude.carrot.infra.repository.chat.dto.ChatRoomMessageBulk;
 import jude.carrot.infra.repository.chat.dto.ReadStatusBulk;
-import jude.carrot.infra.repository.chat.dto.RedisChatMessage;
-import jude.carrot.infra.repository.chat.dto.RedisChatRoomMessage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,18 +12,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.ZSetOperations;
 
-import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -62,7 +65,7 @@ class ChatSyncServiceTest {
         ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         List<Object> redisChatMessages = keys.stream()
-                .<Object>map(key -> RedisChatMessage.builder().id(key).content("content-" + key).publishedBy(1L).publishedAt(LocalDateTime.now()).build())
+                .<Object>map(key -> Map.of("id", key, "content", "content-" + key, "publishedBy", 1, "publishedAt", "2026-09-07T12:30:15"))
                 .toList();
         when(valueOperations.multiGet(keys)).thenReturn(redisChatMessages);
 
@@ -90,7 +93,7 @@ class ChatSyncServiceTest {
         when(valueOperations.multiGet(anyList())).thenAnswer(invocation -> {
             List<String> requestedKeys = invocation.getArgument(0);
             return requestedKeys.stream()
-                    .<Object>map(key -> RedisChatMessage.builder().id(key).content(key).publishedBy(1L).publishedAt(LocalDateTime.now()).build())
+                    .<Object>map(key -> Map.of("id", key, "content", key, "publishedBy", 1, "publishedAt", "2026-09-07T12:30:15"))
                     .toList();
         });
 
@@ -110,21 +113,21 @@ class ChatSyncServiceTest {
         List<String> keys = List.of("chatRoom::10", "chatRoom::20");
         Cursor<String> cursor = mockCursor(keys);
         when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
-        ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        List<Object> redisChatRoomMessages = List.of(
-                RedisChatRoomMessage.from("100"),
-                RedisChatRoomMessage.from("200")
-        );
-        when(valueOperations.multiGet(keys)).thenReturn(redisChatRoomMessages);
+        ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
+        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+        // 실제 Redis에서는 Object.class serializer 때문에 멤버가 Map으로 역직렬화된다
+        when(zSetOperations.range("chatRoom::10", 0, -1))
+                .thenReturn(new LinkedHashSet<>(List.of(Map.of("chatMessageId", "100"))));
+        when(zSetOperations.range("chatRoom::20", 0, -1))
+                .thenReturn(new LinkedHashSet<>(List.of(Map.of("chatMessageId", "200"), Map.of("chatMessageId", "201"))));
 
         chatSyncService.syncChatRoomMessage();
 
         ArgumentCaptor<List<ChatRoomMessageBulk>> captor = ArgumentCaptor.forClass(List.class);
         verify(chatRepository, times(1)).bulkChatRoomMessage(captor.capture());
         List<ChatRoomMessageBulk> bulks = captor.getValue();
-        assertThat(bulks).extracting(ChatRoomMessageBulk::chatRoomId).containsExactly(10L, 20L);
-        assertThat(bulks).extracting(ChatRoomMessageBulk::chatMessageId).containsExactly("100", "200");
+        assertThat(bulks).extracting(ChatRoomMessageBulk::chatRoomId).containsExactly(10L, 20L, 20L);
+        assertThat(bulks).extracting(ChatRoomMessageBulk::chatMessageId).containsExactly("100", "200", "201");
     }
 
     @Test
@@ -135,11 +138,11 @@ class ChatSyncServiceTest {
                 .toList();
         Cursor<String> cursor = mockCursor(keys);
         when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
-        ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.multiGet(anyList())).thenAnswer(invocation -> {
-            List<String> requestedKeys = invocation.getArgument(0);
-            return requestedKeys.stream().<Object>map(key -> RedisChatRoomMessage.from(key)).toList();
+        ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
+        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.range(anyString(), eq(0L), eq(-1L))).thenAnswer(invocation -> {
+            String requestedKey = invocation.getArgument(0);
+            return new LinkedHashSet<>(List.of(Map.of("chatMessageId", requestedKey.split("::")[1])));
         });
 
         chatSyncService.syncChatRoomMessage();
@@ -156,7 +159,7 @@ class ChatSyncServiceTest {
         when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
         ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.multiGet(keys)).thenReturn(List.of("chatMessage::1", "chatMessage::2"));
+        when(valueOperations.multiGet(keys)).thenReturn(List.of(Map.of("chatMessageId", "1"), Map.of("chatMessageId", "2")));
 
         chatSyncService.syncReadStatus();
 
@@ -164,7 +167,7 @@ class ChatSyncServiceTest {
         verify(chatRepository, times(1)).bulkReadStatus(captor.capture());
         List<ReadStatusBulk> bulks = captor.getValue();
         assertThat(bulks).extracting(ReadStatusBulk::chatParticipantId).containsExactly(5L, 6L);
-        assertThat(bulks).extracting(ReadStatusBulk::chatMessageId).containsExactly("chatMessage::1", "chatMessage::2");
+        assertThat(bulks).extracting(ReadStatusBulk::chatMessageId).containsExactly("1", "2");
     }
 
     @Test
@@ -176,5 +179,52 @@ class ChatSyncServiceTest {
         chatSyncService.syncReadStatus();
 
         verify(chatRepository, never()).bulkReadStatus(anyList());
+    }
+
+    @Test
+    @DisplayName("reconciliation: zset에 없는 chatMessage 키만 삭제한다")
+    void reconciliation_deletesOnlyOrphanChatMessageKeys() {
+        Cursor<String> zsetKeyCursor = mockCursor(List.of("chatRoom::10"));
+        Cursor<String> stringKeyCursor = mockCursor(List.of("chatMessage::1", "chatMessage::2", "chatMessage::3"));
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(zsetKeyCursor, stringKeyCursor);
+
+        ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
+        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+        Cursor<ZSetOperations.TypedTuple<Object>> memberCursor = mock(Cursor.class);
+        Iterator<ZSetOperations.TypedTuple<Object>> members = List.<ZSetOperations.TypedTuple<Object>>of(
+                new DefaultTypedTuple<>(Map.of("chatMessageId", "1"), 1d),
+                new DefaultTypedTuple<>(Map.of("chatMessageId", "2"), 2d)
+        ).iterator();
+        when(memberCursor.hasNext()).thenAnswer(invocation -> members.hasNext());
+        lenient().when(memberCursor.next()).thenAnswer(invocation -> members.next());
+        when(zSetOperations.scan(eq("chatRoom::10"), any(ScanOptions.class))).thenReturn(memberCursor);
+
+        chatSyncService.reconciliation();
+
+        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
+        verify(redisTemplate, times(1)).delete(captor.capture());
+        assertThat(captor.getValue()).containsExactly("chatMessage::3");
+    }
+
+    @Test
+    @DisplayName("reconciliation: 고아 키가 없으면 삭제하지 않는다")
+    void reconciliation_doesNotDeleteWhenNoOrphans() {
+        Cursor<String> zsetKeyCursor = mockCursor(List.of("chatRoom::10"));
+        Cursor<String> stringKeyCursor = mockCursor(List.of("chatMessage::1"));
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(zsetKeyCursor, stringKeyCursor);
+
+        ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
+        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+        Cursor<ZSetOperations.TypedTuple<Object>> memberCursor = mock(Cursor.class);
+        Iterator<ZSetOperations.TypedTuple<Object>> members = List.<ZSetOperations.TypedTuple<Object>>of(
+                new DefaultTypedTuple<>(Map.of("chatMessageId", "1"), 1d)
+        ).iterator();
+        when(memberCursor.hasNext()).thenAnswer(invocation -> members.hasNext());
+        lenient().when(memberCursor.next()).thenAnswer(invocation -> members.next());
+        when(zSetOperations.scan(eq("chatRoom::10"), any(ScanOptions.class))).thenReturn(memberCursor);
+
+        chatSyncService.reconciliation();
+
+        verify(redisTemplate, never()).delete(anyList());
     }
 }
