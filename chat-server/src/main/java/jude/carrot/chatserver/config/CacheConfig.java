@@ -21,6 +21,7 @@ import java.time.Duration;
 public class CacheConfig {
 
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+    private static final String CACHE_KEY_PREFIX = "cache::";
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
@@ -34,6 +35,7 @@ public class CacheConfig {
     private RedisCacheConfiguration cacheConfiguration(Class<?> type) {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(CACHE_TTL)
+                .computePrefixWith(cacheName -> CACHE_KEY_PREFIX + cacheName + "::")
                 .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(SerializationPair.fromSerializer(new JacksonJsonRedisSerializer<>(type)));
     }
