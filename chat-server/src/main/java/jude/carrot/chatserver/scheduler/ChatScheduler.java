@@ -29,4 +29,10 @@ public class ChatScheduler {
     public void syncReadStatus() {
         chatSyncService.syncReadStatus();
     }
+
+    @Scheduled(fixedDelay = 60_000)
+    @SchedulerLock(name = "reconciliation", lockAtLeastFor = "PT10S", lockAtMostFor = "PT10M")
+    public void reconciliation(){
+        chatSyncService.reconciliation();
+    }
 }

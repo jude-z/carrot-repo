@@ -21,13 +21,7 @@ public record PollingChatMessagesResponse(
 
     public static PollingChatMessagesResponse from(List<RedisChatMessage> redisChatMessages) {
         List<ChatMessageElement> chatMessageElements = redisChatMessages.stream()
-                .map(redisChatMessage -> ChatMessageElement.builder()
-                        .id(redisChatMessage.id())
-                        .content(redisChatMessage.content())
-                        .publishedBy(redisChatMessage.publishedBy())
-                        .publishedAt(redisChatMessage.publishedAt())
-                        .build()
-                )
+                .map(ChatMessageElement::from)
                 .toList();
 
         return PollingChatMessagesResponse
