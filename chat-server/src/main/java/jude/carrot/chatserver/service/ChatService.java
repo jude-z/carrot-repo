@@ -36,7 +36,6 @@ import java.time.LocalDateTime;
 
 import static jude.carrot.service.status.Status.USER_NOT_EXIST;
 
-
 @RequiredArgsConstructor
 @Service
 public class ChatService {
@@ -48,7 +47,6 @@ public class ChatService {
     private final ChatCacheService chatCacheService;
     private final ChatRetryService chatRetryService;
     private final SnowFlakeKeyGenerator snowFlakeKeyGenerator;
-
 
     public CreateChatRoomResponse createChatRoom(Long userId, CreateChatRoomRequest createChatRoomRequest) {
         User creator = userRepository.findById(userId)
@@ -97,41 +95,37 @@ public class ChatService {
         double score = Double.parseDouble(snowflakeId);
         chatRetryService.saveRedis(chatMessageKey, chatRoomMessageKey, redisChatMessage, redisChatRoomMessage, score);
     }
-    @Retryable
-    private void saveRedis(String chatMessageKey, String chatRoomMessageKey, RedisChatMessage redisChatMessage, RedisChatRoomMessage redisChatRoomMessage, Double score){
-        redisTemplate.opsForValue().set(chatMessageKey, redisChatMessage);
-        redisTemplate.opsForZSet().add(chatRoomMessageKey, redisChatRoomMessage, score);
-    }
-    @Recover
-    private void recover(){
 
-    }
     public Mono<PollingChatMessagesResponse> pollingFetch(Long chatRoomId, Long userId,String lastChatMessageId) {
         chatCacheService.fetchChatRoom(chatRoomId)
                 .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
         chatCacheService.fetchChatParticipant(chatRoomId, userId)
                 .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
-        String currentSnowFlakeKey = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
         String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(chatRoomId);
+        // 클라이언트가 이미 받은 마지막 메시지는 제외(배타). 상한은 폴링 도중 발행된 메시지를 놓치지 않도록 틱마다 다시 계산한다.
+        Range.Bound<Double> lowerBound = Range.Bound.exclusive(Double.valueOf(lastChatMessageId));
 
         return Flux.interval(Duration.ZERO, Duration.ofMillis(500))
                 .take(Duration.ofMillis(4500))
-                .concatMap(tick ->
-                        reactiveRedisTemplate.opsForZSet()
-                        .rangeByScore(chatRoomMessageKey, Range.closed(Double.valueOf(lastChatMessageId),Double.valueOf(currentSnowFlakeKey)))
-                        .map(data -> (String) data)
-                        .collectList())
+                .concatMap(tick -> {
+                    String currentSnowFlakeKey = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
+                    Range<Double> range = Range.of(lowerBound, Range.Bound.inclusive(Double.valueOf(currentSnowFlakeKey)));
+                    return reactiveRedisTemplate.opsForZSet()
+                        .rangeByScore(chatRoomMessageKey, range)
+                        .map(RedisChatRoomMessage::chatMessageIdOf)
+                        .map(ChatKeyGenerator::generateChatMessageKey)
+                        .collectList();
+                })
                 .filter(list -> !list.isEmpty())
                 .next()
-                .flatMap(chatMessageId -> reactiveRedisTemplate.opsForValue()
-                        .multiGet(chatMessageId))
+                .flatMap(chatMessageKeys -> reactiveRedisTemplate.opsForValue()
+                        .multiGet(chatMessageKeys))
                 .publishOn(Schedulers.parallel())
                 .map(list -> list.stream()
-                        .map(data -> (RedisChatMessage) data)
+                        .map(RedisChatMessage::of)
                         .toList())
                 .map(PollingChatMessagesResponse::from);
     }
-
 
     public void read(Long chatRoomId, Long userId, String chatMessageKey) {
         chatCacheService.fetchChatRoom(chatRoomId)
@@ -141,6 +135,7 @@ public class ChatService {
         chatCacheService.fetchChatMessage(chatMessageKey)
                 .orElseThrow(() -> new CustomException(Status.CHAT_MESSAGE_NOT_EXIST));
         String readStatusKey = ChatKeyGenerator.generateReadStatusKey(userId, chatRoomId);
-        redisTemplate.opsForValue().set(readStatusKey, RedisReadStatus.from(chatMessageKey));
+        String chatMessageId = ChatKeyGenerator.parseChatMessageId(chatMessageKey);
+        redisTemplate.opsForValue().set(readStatusKey, RedisReadStatus.from(chatMessageId));
     }
 }

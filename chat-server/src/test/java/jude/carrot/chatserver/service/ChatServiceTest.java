@@ -43,6 +43,7 @@ import reactor.test.StepVerifier;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static jude.carrot.service.status.Status.*;
@@ -78,6 +79,8 @@ class ChatServiceTest {
     private ChatCacheService chatCacheService;
     @Mock
     private SnowFlakeKeyGenerator snowFlakeKeyGenerator;
+    @Mock
+    private ChatRetryService chatRetryService;
 
     private User creator;
     private User opponent;
@@ -248,16 +251,12 @@ class ChatServiceTest {
     }
 
     @Test
-    @DisplayName("메시지를 발행하면 Redis에 메시지와 채팅방 메시지 키를 저장한다")
+    @DisplayName("메시지를 발행하면 ChatRetryService를 통해 메시지 키와 채팅방 zset 멤버를 함께 저장한다")
     void publish_success() {
         ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
         when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
         when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.of(chatParticipant));
         when(snowFlakeKeyGenerator.generateSnowFlakeKey(any(LocalDateTime.class))).thenReturn("123456789");
-        ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
         PublishChatRequest request = PublishChatRequest.builder().content("hello").build();
 
         chatService.publish(CHAT_ROOM_ID, USER_ID, request);
@@ -266,13 +265,12 @@ class ChatServiceTest {
         String expectedRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(CHAT_ROOM_ID);
 
         ArgumentCaptor<RedisChatMessage> messageCaptor = ArgumentCaptor.forClass(RedisChatMessage.class);
-        verify(valueOperations).set(eq(expectedMessageKey), messageCaptor.capture());
-        assertThat(messageCaptor.getValue().content()).isEqualTo("hello");
-        assertThat(messageCaptor.getValue().publishedBy()).isEqualTo(CHAT_PARTICIPANT_ID);
-
         ArgumentCaptor<RedisChatRoomMessage> roomMessageCaptor = ArgumentCaptor.forClass(RedisChatRoomMessage.class);
         ArgumentCaptor<Double> scoreCaptor = ArgumentCaptor.forClass(Double.class);
-        verify(zSetOperations).add(eq(expectedRoomMessageKey), roomMessageCaptor.capture(), scoreCaptor.capture());
+        verify(chatRetryService).saveRedis(eq(expectedMessageKey), eq(expectedRoomMessageKey),
+                messageCaptor.capture(), roomMessageCaptor.capture(), scoreCaptor.capture());
+        assertThat(messageCaptor.getValue().content()).isEqualTo("hello");
+        assertThat(messageCaptor.getValue().publishedBy()).isEqualTo(CHAT_PARTICIPANT_ID);
         assertThat(roomMessageCaptor.getValue().chatMessageId()).isEqualTo("123456789");
         assertThat(scoreCaptor.getValue()).isEqualTo(123456789.0);
     }
@@ -313,15 +311,17 @@ class ChatServiceTest {
 
         String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(CHAT_ROOM_ID);
         String chatMessageKey = ChatKeyGenerator.generateChatMessageKey("2000");
-        RedisChatMessage redisChatMessage = RedisChatMessage.builder()
-                .id("2000").content("new message").publishedBy(CHAT_PARTICIPANT_ID).publishedAt(LocalDateTime.now()).build();
+        // string 값도 실제 Redis에서는 Map으로 역직렬화된다
+        Map<String, Object> redisChatMessage = Map.of(
+                "id", "2000", "content", "new message", "publishedBy", CHAT_PARTICIPANT_ID, "publishedAt", "2026-09-07T12:30:15");
 
         ReactiveZSetOperations<String, Object> reactiveZSetOperations = mock(ReactiveZSetOperations.class);
         ReactiveValueOperations<String, Object> reactiveValueOperations = mock(ReactiveValueOperations.class);
         when(reactiveRedisTemplate.opsForZSet()).thenReturn(reactiveZSetOperations);
         when(reactiveRedisTemplate.opsForValue()).thenReturn(reactiveValueOperations);
+        // zset 멤버는 실제 Redis에서 Map으로 역직렬화되므로 그 형태 그대로 준다
         when(reactiveZSetOperations.rangeByScore(eq(chatRoomMessageKey), any(Range.class)))
-                .thenReturn(Flux.just(chatMessageKey));
+                .thenReturn(Flux.just(Map.of("chatMessageId", "2000")));
         when(reactiveValueOperations.multiGet(List.of(chatMessageKey)))
                 .thenReturn(Mono.just(List.of(redisChatMessage)));
 
@@ -391,6 +391,6 @@ class ChatServiceTest {
         String expectedKey = ChatKeyGenerator.generateReadStatusKey(USER_ID, CHAT_ROOM_ID);
         ArgumentCaptor<RedisReadStatus> captor = ArgumentCaptor.forClass(RedisReadStatus.class);
         verify(valueOperations).set(eq(expectedKey), captor.capture());
-        assertThat(captor.getValue().chatMessageId()).isEqualTo("chatMessage::1");
+        assertThat(captor.getValue().chatMessageId()).isEqualTo("1");
     }
 }

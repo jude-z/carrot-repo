@@ -1,2 +1,26 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/testdb}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:00000000}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+jude:
+  auth:
+    default-url: /api/v1/auth
+    login-url: /login
+    logout-url: /logout
+  kakao-token: ${KAKAO_TOKEN:kakao_token}
+  kakao-url: ${KAKAO_URL:https://dapi.kakao.com/v2/local/geo/coord2regioncode.json}
+
 snowflake:
   instance-id: 1
