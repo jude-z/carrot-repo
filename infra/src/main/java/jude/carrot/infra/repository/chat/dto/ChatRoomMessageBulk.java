@@ -8,10 +8,10 @@ public record ChatRoomMessageBulk(
         String chatMessageId
 ) {
 
-    public static ChatRoomMessageBulk from(Long chatRoomId, RedisChatRoomMessage redisChatRoomMessage) {
+    public static ChatRoomMessageBulk from(Long chatRoomId, String chatMessageId) {
         return ChatRoomMessageBulk.builder()
                 .chatRoomId(chatRoomId)
-                .chatMessageId(redisChatRoomMessage.chatMessageId())
+                .chatMessageId(chatMessageId)
                 .build();
     }
 }
