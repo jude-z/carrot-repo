@@ -11,4 +11,13 @@ public record ChatMessageElement(
         Long publishedBy,
         LocalDateTime publishedAt
 ) {
+
+    public static ChatMessageElement from(RedisChatMessage redisChatMessage) {
+        return ChatMessageElement.builder()
+                .id(redisChatMessage.id())
+                .content(redisChatMessage.content())
+                .publishedBy(redisChatMessage.publishedBy())
+                .publishedAt(redisChatMessage.publishedAt())
+                .build();
+    }
 }
