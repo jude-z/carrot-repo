@@ -9,7 +9,7 @@
 
 ## 비즈니스 issue 해결 과정
 
-* [고정된 리소스(Socket)로 최대한의 동시성을 얻기 위해서는 어떤 구조를 택해야할까???](docs/issues/long-polling-concurrency.md)
+* [고정된 리소스(Socket)로 최대한 다양한 클라이언트와의 커넥션을 맺기 위해서는 어떤 구조가 적합할까???](docs/issues/long-polling-concurrency.md)
 * [분산환경에서 PK가 중복되어서 데이터 정합성 불일치 문제를 해결하기 위해 어떤 키 전략을 사용해야 할까???](docs/issues/distributed-id-snowflake.md)
 * [Redis 두 개 이상의 Command를 Atomic으로 수행할려고 할 때, 데이터 정합성을 유지하기 위해 롤백 기능을 어떻게 개발해야할까???](docs/issues/redis-atomic-rollback.md)
 * [Redis에 있는 데이터를 DB로 동기화하기전에 데이터가 삭제 될 위험이 있는 경우에는, TTL 전략을 어떻게 가져가야할까??](docs/issues/redis-ttl-sync.md)
