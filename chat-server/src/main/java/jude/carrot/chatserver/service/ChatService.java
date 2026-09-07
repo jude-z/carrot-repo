@@ -96,6 +96,22 @@ public class ChatService {
         chatRetryService.saveRedis(chatMessageKey, chatRoomMessageKey, redisChatMessage, redisChatRoomMessage, score);
     }
 
+    public ChatMessageElement publishForWebSocket(Long chatRoomId, Long userId, PublishChatRequest publishChatRequest) {
+        chatCacheService.fetchChatRoom(chatRoomId)
+                .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
+        ChatParticipant chatParticipant = chatCacheService.fetchChatParticipant(chatRoomId, userId)
+                .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
+        Long chatParticipantId = chatParticipant.getId();
+        String snowflakeId = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
+        RedisChatMessage redisChatMessage = RedisChatMessage.from(snowflakeId, publishChatRequest, LocalDateTime.now(),chatParticipantId);
+        RedisChatRoomMessage redisChatRoomMessage = RedisChatRoomMessage.from(snowflakeId);
+        String chatMessageKey = ChatKeyGenerator.generateChatMessageKey(snowflakeId);
+        String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(chatRoomId);
+        double score = Double.parseDouble(snowflakeId);
+        chatRetryService.saveRedis(chatMessageKey, chatRoomMessageKey, redisChatMessage, redisChatRoomMessage, score);
+        return ChatMessageElement.from(redisChatMessage);
+    }
+
     public Mono<PollingChatMessagesResponse> pollingFetch(Long chatRoomId, Long userId,String lastChatMessageId) {
         chatCacheService.fetchChatRoom(chatRoomId)
                 .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));

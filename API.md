@@ -426,3 +426,42 @@
   }
 }
 ```
+
+---
+
+## 채팅 발행 (Chat Publish)
+
+HTTP 롱폴링 방식과 비교하기 위해 같은 발행 로직을 순수 WebSocket으로도 제공한다. 두 방식 모두 `ChatService.publish`를 호출해 Redis에 동일하게 저장한다.
+
+### HTTP
+- `POST /api/v1/chatRoom/publish/{chatRoomId}`
+- Request
+```json
+{ "content": "안녕하세요" }
+```
+- Response `200`
+```json
+{ "code": "SC", "detailMessage": "success" }
+```
+- 수신은 `GET /api/v1/chatRoom/polling-fetch/{chatRoomId}?chatMessageId={lastId}` 롱폴링으로 한다.
+
+### WebSocket
+- 접속: `ws://{host}/ws/chat/{chatRoomId}` (로그인 세션 쿠키 필요, 미인증이면 SecurityFilterChain에서 핸드셰이크 거부)
+- 발행: 텍스트 프레임으로 JSON 전송
+```json
+{ "content": "안녕하세요" }
+```
+- 수신: 발행 성공 시 같은 `chatRoomId`에 접속한 모든 세션(발행자 포함)에 아래 JSON이 전달된다.
+```json
+{
+  "id": "123456789",
+  "content": "안녕하세요",
+  "publishedBy": 7,
+  "publishedAt": "2026-09-07T12:30:15"
+}
+```
+- 실패: 발행자 세션에만 `ApiResponse` 실패 포맷이 전달된다. JSON 파싱 실패는 `VF`.
+```json
+{ "code": "CPE", "detailMessage": "chat participant does not exist" }
+```
+- Principal이 없거나 `chatRoomId`가 숫자가 아니면 접속 직후 `1008 POLICY_VIOLATION`으로 닫힌다.
