@@ -4,6 +4,8 @@ import jude.carrot.chatserver.response.ChatMessageResponse;
 import jude.carrot.chatserver.response.CreateChatRoomResponse;
 import jude.carrot.chatserver.response.FetchRecentChatMessage;
 import jude.carrot.chatserver.response.PollingChatMessagesResponse;
+import jude.carrot.chatserver.metrics.ActiveClientTracker;
+import jude.carrot.chatserver.metrics.Transport;
 import jude.carrot.chatserver.service.ChatService;
 import jude.carrot.service.exception.CustomException;
 import jude.carrot.web.advice.CommonControllerAdvice;
@@ -51,6 +53,8 @@ class ChatControllerTest {
 
     @MockitoBean
     private ChatService chatService;
+    @MockitoBean
+    private ActiveClientTracker activeClientTracker;
 
     @BeforeEach
     void setUpPrincipal() {
@@ -129,6 +133,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.code").value("SC"));
 
         verify(chatService).publish(eq(CHAT_ROOM_ID), eq(USER_ID), any());
+        verify(activeClientTracker).touch(Transport.LONG_POLLING, USER_ID);
     }
 
     @Test

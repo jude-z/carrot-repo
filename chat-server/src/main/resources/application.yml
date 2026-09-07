@@ -24,3 +24,24 @@ jude:
 
 snowflake:
   instance-id: 1
+
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: chat-server
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        chat.websocket.publish: true

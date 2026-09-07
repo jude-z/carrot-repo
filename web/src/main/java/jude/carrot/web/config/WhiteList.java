@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum WhiteList {
     HEALTH("/health","GET"),
     LOGIN("/api/v1/auth/login","POST"),
-    SIGNUP("/api/v1/auth/signup","POST");
+    SIGNUP("/api/v1/auth/signup","POST"),
+    ACTUATOR("/actuator/**","GET");
     private final String url;
     private final String method;
 

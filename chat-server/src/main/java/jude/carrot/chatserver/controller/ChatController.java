@@ -4,6 +4,8 @@ import jude.carrot.chatserver.response.ChatMessageResponse;
 import jude.carrot.chatserver.response.CreateChatRoomResponse;
 import jude.carrot.chatserver.response.FetchRecentChatMessage;
 import jude.carrot.chatserver.response.PollingChatMessagesResponse;
+import jude.carrot.chatserver.metrics.ActiveClientTracker;
+import jude.carrot.chatserver.metrics.Transport;
 import jude.carrot.chatserver.service.ChatService;
 import jude.carrot.infra.repository.chat.dto.CreateChatRoomRequest;
 import jude.carrot.infra.repository.chat.dto.PublishChatRequest;
@@ -23,6 +25,7 @@ import static jude.carrot.service.status.Status.SUCCESS;
 @RequestMapping("/api/v1/chatRoom")
 public class ChatController {
     private final ChatService chatService;
+    private final ActiveClientTracker activeClientTracker;
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreateChatRoomResponse>> createChatRoom(@AuthenticationPrincipal Long userId,
@@ -41,12 +44,14 @@ public class ChatController {
     @PostMapping("/publish/{chatRoomId}")
     public ResponseEntity<ApiResponse<Void>> publish(@PathVariable Long chatRoomId, @AuthenticationPrincipal Long userId,
                                                         @RequestBody PublishChatRequest publishChatRequest){
+        activeClientTracker.touch(Transport.LONG_POLLING, userId);
         chatService.publish(chatRoomId, userId, publishChatRequest);
         return successResponseEntity();
     }
     @GetMapping("/polling-fetch/{chatRoomId}")
     public DeferredResult<PollingChatMessagesResponse> pollingFetch(@PathVariable Long chatRoomId, @AuthenticationPrincipal Long userId,
                                                                     @RequestParam("chatMessageId") String lastChatMessageId){
+        activeClientTracker.touch(Transport.LONG_POLLING, userId);
         DeferredResult<PollingChatMessagesResponse> deferredResult = new DeferredResult<>(5000L);
         chatService.pollingFetch(chatRoomId, userId,lastChatMessageId)
                 .subscribe(
