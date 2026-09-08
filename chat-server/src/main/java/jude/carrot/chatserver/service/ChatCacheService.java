@@ -1,6 +1,5 @@
 package jude.carrot.chatserver.service;
 
-import jude.carrot.chatserver.key.redis.ChatKeyGenerator;
 import jude.carrot.infra.entity.chat.ChatMessage;
 import jude.carrot.infra.entity.chat.ChatParticipant;
 import jude.carrot.infra.entity.chat.ChatRoom;
@@ -27,9 +26,8 @@ public class ChatCacheService {
         return chatRepository.fetchChatParticipant(chatRoomId, userId);
     }
 
-    @Cacheable(cacheNames = "chatMessage", key = "#chatMessageKey", unless = "#result == null")
-    public Optional<ChatMessage> fetchChatMessage(String chatMessageKey){
-        String chatMessageId = ChatKeyGenerator.parseChatMessageId(chatMessageKey);
+    @Cacheable(cacheNames = "chatMessage", key = "#chatMessageId", unless = "#result == null")
+    public Optional<ChatMessage> fetchChatMessage(String chatMessageId){
         return chatRepository.fetchChatMessage(chatMessageId);
     }
 }
