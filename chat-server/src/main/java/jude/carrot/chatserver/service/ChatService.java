@@ -80,11 +80,21 @@ public class ChatService {
         return ChatMessageResponse.from(page);
     }
     public void publish(Long chatRoomId, Long userId, PublishChatRequest publishChatRequest) {
+        saveChatMessage(chatRoomId, userId, publishChatRequest);
+    }
+
+    public ChatMessageElement publishForWebSocket(Long chatRoomId, Long userId, PublishChatRequest publishChatRequest) {
+        RedisChatMessage redisChatMessage = saveChatMessage(chatRoomId, userId, publishChatRequest);
+        return ChatMessageElement.from(redisChatMessage);
+    }
+
+    private RedisChatMessage saveChatMessage(Long chatRoomId, Long userId, PublishChatRequest publishChatRequest) {
         ChatParticipant chatParticipant = validateParticipant(chatRoomId, userId);
         Long chatParticipantId = chatParticipant.getId();
         String snowflakeId = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
-        RedisChatMessage redisChatMessage = RedisChatMessage.from(snowflakeId, publishChatRequest, LocalDateTime.now(),chatParticipantId);
+        RedisChatMessage redisChatMessage = RedisChatMessage.from(snowflakeId, publishChatRequest, LocalDateTime.now(), chatParticipantId);
         chatRetryService.saveRedis(chatRoomId, redisChatMessage);
+        return redisChatMessage;
     }
 
     public Mono<PollingChatMessagesResponse> pollingFetch(Long chatRoomId, Long userId,String lastChatMessageId) {

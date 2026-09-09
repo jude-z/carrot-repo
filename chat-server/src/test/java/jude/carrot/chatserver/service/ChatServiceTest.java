@@ -267,6 +267,41 @@ class ChatServiceTest {
         assertThat(messageCaptor.getValue().publishedBy()).isEqualTo(CHAT_PARTICIPANT_ID);
     }
 
+    @Test
+    @DisplayName("WebSocket 발행은 HTTP 발행과 같은 데이터를 ChatRetryService에 위임하고 브로드캐스트용 요소를 반환한다")
+    void publishForWebSocket_success() {
+        ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
+        when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
+        when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.of(chatParticipant));
+        when(snowFlakeKeyGenerator.generateSnowFlakeKey(any(LocalDateTime.class))).thenReturn("123456789");
+        PublishChatRequest request = PublishChatRequest.builder().content("hello").build();
+
+        ChatMessageElement element = chatService.publishForWebSocket(CHAT_ROOM_ID, USER_ID, request);
+
+        ArgumentCaptor<RedisChatMessage> messageCaptor = ArgumentCaptor.forClass(RedisChatMessage.class);
+        verify(chatRetryService).saveRedis(eq(CHAT_ROOM_ID), messageCaptor.capture());
+        assertThat(messageCaptor.getValue().id()).isEqualTo("123456789");
+        assertThat(element.id()).isEqualTo("123456789");
+        assertThat(element.content()).isEqualTo("hello");
+        assertThat(element.publishedBy()).isEqualTo(CHAT_PARTICIPANT_ID);
+    }
+
+    @Test
+    @DisplayName("WebSocket 발행도 채팅방 참여자가 아니면 CustomException(CHAT_PARTICIPANT_NOT_EXIST)을 던진다")
+    void publishForWebSocket_fail_whenChatParticipantNotExist() {
+        ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
+        when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
+        when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.empty());
+        PublishChatRequest request = PublishChatRequest.builder().content("hi").build();
+
+        assertThatThrownBy(() -> chatService.publishForWebSocket(CHAT_ROOM_ID, USER_ID, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("httpStatus")
+                .isEqualTo(CHAT_PARTICIPANT_NOT_EXIST.getHttpStatus());
+
+        verify(chatRetryService, never()).saveRedis(any(), any());
+    }
+
     // ---------- pollingFetch ----------
 
     @Test

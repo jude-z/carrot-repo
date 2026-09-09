@@ -446,8 +446,7 @@
 | --- | --- | --- |
 | `chatRoomId`에 해당하는 채팅방이 없음 | `CRE` | 400 |
 | 로그인한 회원이 그 채팅방의 참여자가 아님 | `CPE` | 400 |
-| Redis 저장이 3회 모두 실패하고 예외가 Lettuce `RedisException`인 경우 | `CMF` | 500 |
-| Redis 저장이 3회 모두 실패했지만 예외 타입이 달라 `@Recover`에 잡히지 않는 경우 | 처리되지 않는 오류 | 500 |
+| Redis 저장이 3회 모두 실패 (연결 실패, 타임아웃 등 예외 종류와 무관) | `CMF` | 500 |
 
 - 참고: `content`는 검증하지 않아 `null`이나 빈 문자열도 저장됩니다.
 
@@ -558,8 +557,44 @@
 | `chatMessageKey` 쿼리 파라미터 누락 | Spring 기본 오류 | 400 |
 | `chatRoomId`에 해당하는 채팅방이 없음 | `CRE` | 400 |
 | 로그인한 회원이 그 채팅방의 참여자가 아님 | `CPE` | 400 |
-| `chatMessageKey`가 `chatMessage::{ID}` 형식이 아님 (`::` 뒤가 없어 파싱 실패) | 처리되지 않는 오류 | 500 |
+| `chatMessageKey`가 `chatMessage::{ID}` 형식이 아님 | `CNE` | 400 |
 | 키에 해당하는 메시지가 MySQL에 없음 (아직 동기화 전이거나 잘못된 ID) | `CNE` | 400 |
+
+### 5.7 메시지 전송 (WebSocket)
+- `ws://{host}/ws/chat/{chatRoomId}` *(auth)*
+- HTTP 방식(5.2)과 비교하기 위해 같은 발행 로직을 순수 WebSocket으로도 제공합니다. 두 방식 모두 같은 저장 로직을 거쳐 Redis에 동일하게 저장됩니다.
+- 접속: 로그인 세션 쿠키가 필요하며, 미인증이면 SecurityFilterChain에서 핸드셰이크가 거부됩니다.
+- 발행: 텍스트 프레임으로 JSON을 전송합니다.
+```json
+{
+  "content": "안녕하세요"
+}
+```
+- 수신: 발행 성공 시 같은 `chatRoomId`에 접속한 모든 세션(발행자 포함)에 아래 JSON이 전달됩니다.
+```json
+{
+  "id": "123456789",
+  "content": "안녕하세요",
+  "publishedBy": 7,
+  "publishedAt": "2026-09-07T12:30:15"
+}
+```
+- 실패: 발행자 세션에만 `ApiResponse` 실패 포맷이 전달됩니다.
+
+| 조건 | code | 동작 |
+| --- | --- | --- |
+| Principal이 없거나 `chatRoomId`가 숫자가 아님 | - | 접속 직후 `1008 POLICY_VIOLATION`으로 종료 |
+| 프레임이 JSON으로 파싱되지 않음 | `VF` | 발행자 세션에 실패 JSON 전송 |
+| `chatRoomId`에 해당하는 채팅방이 없음 | `CRE` | 발행자 세션에 실패 JSON 전송 |
+| 로그인한 회원이 그 채팅방의 참여자가 아님 | `CPE` | 발행자 세션에 실패 JSON 전송 |
+| Redis 저장이 3회 모두 실패 | `CMF` | 발행자 세션에 실패 JSON 전송 |
+
+```json
+{
+  "code": "CPE",
+  "detailMessage": "chat participant does not exist"
+}
+```
 
 ---
 
