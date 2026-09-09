@@ -23,10 +23,6 @@ public record RedisChatMessage(
     }
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
-    /**
-     * 값은 JacksonJsonRedisSerializer(Object.class)로 저장되어 읽을 때 Map으로 역직렬화된다.
-     * 그 Map을 RedisChatMessage로 변환한다.
-     */
     public static RedisChatMessage of(Object value) {
         return MAPPER.convertValue(value, RedisChatMessage.class);
     }
