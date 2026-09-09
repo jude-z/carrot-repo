@@ -53,12 +53,12 @@ class ChatCacheServiceTest {
     }
 
     @Test
-    @DisplayName("fetchChatMessage는 chatMessageKey에서 id를 추출해 조회한다")
-    void fetchChatMessage_parsesKeyAndDelegatesToRepository() {
+    @DisplayName("fetchChatMessage는 chatMessageId로 리포지토리에 위임한다")
+    void fetchChatMessage_delegatesToRepository() {
         ChatMessage chatMessage = ChatMessage.builder().id("1").build();
         when(chatRepository.fetchChatMessage("1")).thenReturn(Optional.of(chatMessage));
 
-        assertThat(chatCacheService.fetchChatMessage("chatMessage::1")).contains(chatMessage);
+        assertThat(chatCacheService.fetchChatMessage("1")).contains(chatMessage);
         verify(chatRepository).fetchChatMessage("1");
     }
 }

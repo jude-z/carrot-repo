@@ -116,10 +116,13 @@ public class ChatService {
 
     public void read(Long chatRoomId, Long userId, String chatMessageKey) {
         ChatParticipant chatParticipant = validateParticipant(chatRoomId, userId);
-        chatCacheService.fetchChatMessage(chatMessageKey)
+        String chatMessageId = ChatKeyGenerator.parseChatMessageId(chatMessageKey);
+        if (chatMessageId == null) {
+            throw new CustomException(Status.CHAT_MESSAGE_NOT_EXIST);
+        }
+        chatCacheService.fetchChatMessage(chatMessageId)
                 .orElseThrow(() -> new CustomException(Status.CHAT_MESSAGE_NOT_EXIST));
         String readStatusKey = ChatKeyGenerator.generateReadStatusKey(chatParticipant.getId(), chatRoomId);
-        String chatMessageId = ChatKeyGenerator.parseChatMessageId(chatMessageKey);
         redisTemplate.opsForValue().set(readStatusKey, RedisReadStatus.from(chatMessageId));
     }
 

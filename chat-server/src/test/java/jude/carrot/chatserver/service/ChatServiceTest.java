@@ -357,12 +357,27 @@ class ChatServiceTest {
         ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
         when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
         when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.of(chatParticipant));
-        when(chatCacheService.fetchChatMessage("chatMessage::1")).thenReturn(Optional.empty());
+        when(chatCacheService.fetchChatMessage("1")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> chatService.read(CHAT_ROOM_ID, USER_ID, "chatMessage::1"))
                 .isInstanceOf(CustomException.class)
                 .extracting("httpStatus")
                 .isEqualTo(CHAT_MESSAGE_NOT_EXIST.getHttpStatus());
+    }
+
+    @Test
+    @DisplayName("chatMessage:: 형식이 아닌 키로 읽음 처리하면 CustomException(CHAT_MESSAGE_NOT_EXIST)을 던진다")
+    void read_fail_whenChatMessageKeyMalformed() {
+        ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
+        when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
+        when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.of(chatParticipant));
+
+        assertThatThrownBy(() -> chatService.read(CHAT_ROOM_ID, USER_ID, "chatRoom::1"))
+                .isInstanceOf(CustomException.class)
+                .extracting("httpStatus")
+                .isEqualTo(CHAT_MESSAGE_NOT_EXIST.getHttpStatus());
+
+        verify(chatCacheService, never()).fetchChatMessage(any());
     }
 
     @Test
@@ -372,7 +387,7 @@ class ChatServiceTest {
         ChatMessage chatMessage = ChatMessage.builder().id("1").content("hi").build();
         when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
         when(chatCacheService.fetchChatParticipant(CHAT_ROOM_ID, USER_ID)).thenReturn(Optional.of(chatParticipant));
-        when(chatCacheService.fetchChatMessage("chatMessage::1")).thenReturn(Optional.of(chatMessage));
+        when(chatCacheService.fetchChatMessage("1")).thenReturn(Optional.of(chatMessage));
         ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
