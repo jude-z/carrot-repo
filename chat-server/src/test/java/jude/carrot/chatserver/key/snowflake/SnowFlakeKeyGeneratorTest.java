@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,6 +66,54 @@ class SnowFlakeKeyGeneratorTest {
                 .collect(Collectors.toSet());
 
         assertThat(keys.size()).isEqualTo(threadCount);
+    }
+
+    @Test
+    @DisplayName("같은 timestamp + instanceId 로 100개 스레드가 동시에 호출하면 sequence 가 0부터 1씩 빠짐없이 증가한다")
+    void generateSnowFlakeKey_sequenceIncrementsByOneUnderConcurrentAccess() throws Exception {
+
+
+        LocalDateTime now = LocalDateTime.now();
+        int threadCount = 100;
+        int callsPerThread = 10;
+        int total = threadCount * callsPerThread;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch ready = new CountDownLatch(threadCount);
+        CountDownLatch start = new CountDownLatch(1);
+
+        List<Future<List<String>>> futures = new ArrayList<>();
+        for (int i = 0; i < threadCount; i++) {
+            futures.add(executorService.submit(() -> {
+                ready.countDown();
+                start.await();
+                List<String> mine = new ArrayList<>(callsPerThread);
+                for (int j = 0; j < callsPerThread; j++) {
+                    mine.add(generator.generateSnowFlakeKey(now));
+                }
+                return mine;
+            }));
+        }
+        ready.await();
+        start.countDown();
+
+        List<Long> keys = new ArrayList<>(total);
+        for (Future<List<String>> future : futures) {
+            for (String key : future.get(5, TimeUnit.SECONDS)) {
+                keys.add(Long.parseLong(key));
+            }
+        }
+        executorService.shutdown();
+
+        long sequenceMask = (1L << 12) - 1;
+        long instanceMask = (1L << 10) - 1;
+        Set<Long> timestamps = keys.stream().map(key -> key >> 22).collect(Collectors.toSet());
+        Set<Long> instanceIds = keys.stream().map(key -> (key >> 12) & instanceMask).collect(Collectors.toSet());
+        List<Long> sequences = keys.stream().map(key -> key & sequenceMask).sorted().toList();
+
+        assertThat(timestamps).hasSize(1);
+        assertThat(instanceIds).containsExactly(1L);
+        assertThat(sequences)
+                .containsExactlyElementsOf(LongStream.range(0, total).boxed().toList());
     }
 
     @Test

@@ -1,7 +1,6 @@
 package jude.carrot.infra.config;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.BeanRegistrarDslMarker;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -17,11 +16,10 @@ import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @ConfigurationProperties("spring.data.redis")
-@RequiredArgsConstructor
+@Setter
 public class RedisConfig {
-    @Value("${host}")
+
     private String host;
-    @Value("${port}")
     private int port;
 
     @Bean
