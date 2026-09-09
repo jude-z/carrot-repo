@@ -9,11 +9,10 @@
 
 ## 비즈니스 issue 해결 과정
 
-* [고정된 리소스(Socket)로 최대한 다양한 클라이언트와의 커넥션을 맺기 위해서는 어떤 구조가 적합할까???](docs/issues/long-polling-concurrency.md)
-* [분산환경에서 PK가 중복되어서 데이터 정합성 불일치 문제를 해결하기 위해 어떤 키 전략을 사용해야 할까???](docs/issues/distributed-id-snowflake.md)
-* [Redis 두 개 이상의 Command를 Atomic으로 수행할려고 할 때, 데이터 정합성을 유지하기 위해 롤백 기능을 어떻게 개발해야할까???](docs/issues/redis-atomic-rollback.md)
-* [Redis에 있는 데이터를 DB로 동기화하기전에 데이터가 삭제 될 위험이 있는 경우에는, TTL 전략을 어떻게 가져가야할까??](docs/issues/redis-ttl-sync.md)
-* [실제로 이미지/동영상 파일은 서버가 아니라 S3(Object Storage)에 저장하는데 무조건 서버를 거쳐야할까??](docs/issues/s3-direct-upload.md)
+* [한정된 소켓수로 최대한 다양한 클라이언트의 처리를 받기 위해서는 어떤 구조가 적합할까?](docs/issues/long-polling-concurrency.md)
+* [다른 인스턴스에서 동시에 같은 pk 발행된다면?](docs/issues/distributed-id-snowflake.md)
+* [두 개의 Command를 하나의 트랜잭션으로 처리하고 싶을 때 어떻게 해야할까?](docs/issues/redis-atomic-rollback.md)
+* [TTL 키 전략을 어떤식으로 가져가야할까?](docs/issues/redis-ttl-sync.md)
 
 ## 프로젝트 중점사항
 * 버전관리(feature별로 branch 전략)
