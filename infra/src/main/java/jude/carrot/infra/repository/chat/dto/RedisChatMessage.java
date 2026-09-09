@@ -1,6 +1,7 @@
 package jude.carrot.infra.repository.chat.dto;
 
 import lombok.Builder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 
@@ -19,5 +20,10 @@ public record RedisChatMessage(
                 .publishedBy(publishedBy)
                 .publishedAt(publishedAt)
                 .build();
+    }
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
+
+    public static RedisChatMessage of(Object value) {
+        return MAPPER.convertValue(value, RedisChatMessage.class);
     }
 }
