@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,13 +80,37 @@ class ChatResponseTest {
     }
 
     @Test
-    @DisplayName("builder로 elements를 지정하지 않으면 빈 리스트가 기본값이 된다")
+    @DisplayName("elements가 null이면 빈 리스트가 기본값이 된다")
     void pollingChatMessagesResponse_defaultElementsIsEmptyList() {
-        PollingChatMessagesResponse response = PollingChatMessagesResponse.builder()
-                .elementCount(0)
-                .build();
+        PollingChatMessagesResponse response = new PollingChatMessagesResponse(null);
 
         assertThat(response.elements()).isNotNull().isEmpty();
+        assertThat(response.elementCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("elementCount는 전달값과 무관하게 elements 크기로 계산된다")
+    void pollingChatMessagesResponse_elementCountFollowsElements() {
+        ChatMessageElement element = ChatMessageElement.builder()
+                .id("1").content("hi").publishedBy(1L).publishedAt(LocalDateTime.now()).build();
+
+        PollingChatMessagesResponse response = new PollingChatMessagesResponse(List.of(element), 99);
+
+        assertThat(response.elementCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("생성 후 원본 리스트를 수정해도 elements와 elementCount는 변하지 않는다")
+    void pollingChatMessagesResponse_copiesElements() {
+        ChatMessageElement element = ChatMessageElement.builder()
+                .id("1").content("hi").publishedBy(1L).publishedAt(LocalDateTime.now()).build();
+        List<ChatMessageElement> source = new ArrayList<>(List.of(element));
+
+        PollingChatMessagesResponse response = new PollingChatMessagesResponse(source);
+        source.clear();
+
+        assertThat(response.elements()).containsExactly(element);
+        assertThat(response.elementCount()).isEqualTo(1);
     }
 
     @Test
@@ -103,5 +128,19 @@ class ChatResponseTest {
         assertThat(response.elementCount()).isEqualTo(1);
         assertThat(response.totalPage()).isEqualTo(1);
         assertThat(response.isLast()).isTrue();
+    }
+
+    @Test
+    @DisplayName("ChatMessageResponse의 elementCount는 page 크기로 계산되고 원본 리스트 수정에 영향받지 않는다")
+    void chatMessageResponse_elementCountFollowsPage() {
+        ChatMessageElement element = ChatMessageElement.builder()
+                .id("1").content("hi").publishedBy(1L).publishedAt(LocalDateTime.now()).build();
+        List<ChatMessageElement> source = new ArrayList<>(List.of(element));
+
+        ChatMessageResponse response = new ChatMessageResponse(source, 20, 0, 1, 0, true);
+        source.clear();
+
+        assertThat(response.page()).containsExactly(element);
+        assertThat(response.elementCount()).isEqualTo(1);
     }
 }

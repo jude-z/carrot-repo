@@ -89,11 +89,7 @@ public class ChatService {
         Long chatParticipantId = chatParticipant.getId();
         String snowflakeId = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
         RedisChatMessage redisChatMessage = RedisChatMessage.from(snowflakeId, publishChatRequest, LocalDateTime.now(),chatParticipantId);
-        RedisChatRoomMessage redisChatRoomMessage = RedisChatRoomMessage.from(snowflakeId);
-        String chatMessageKey = ChatKeyGenerator.generateChatMessageKey(snowflakeId);
-        String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(chatRoomId);
-        double score = Double.parseDouble(snowflakeId);
-        chatRetryService.saveRedis(chatMessageKey, chatRoomMessageKey, redisChatMessage, redisChatRoomMessage, score);
+        chatRetryService.saveRedis(chatRoomId, redisChatMessage);
     }
 
     public Mono<PollingChatMessagesResponse> pollingFetch(Long chatRoomId, Long userId,String lastChatMessageId) {

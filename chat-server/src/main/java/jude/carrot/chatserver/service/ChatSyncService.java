@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static jude.carrot.chatserver.key.redis.ChatKeyGenerator.readStatusKeyPattern;
@@ -24,73 +26,57 @@ import static jude.carrot.chatserver.key.redis.ChatKeyGenerator.readStatusKeyPat
 @Service
 @RequiredArgsConstructor
 public class ChatSyncService {
+    private static final int BATCH_SIZE = 1000;
+    private static final long SCAN_COUNT = 20L;
+    private static final long ZSET_RETAIN_SIZE = 200L;
+
     private final ChatRepository chatRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public void syncChatMessage(){
-        String chatMessagePattern = ChatKeyGenerator.chatMessageKeyPattern();
-        ScanOptions scanOptions = from(chatMessagePattern, DataType.STRING);
+        syncInBatches(ChatKeyGenerator.chatMessageKeyPattern(), DataType.STRING, this::syncChatMessage);
+    }
 
+    public void syncChatRoomMessage(){
+        syncInBatches(ChatKeyGenerator.chatRoomMessageKeyPattern(), DataType.ZSET, this::syncChatRoomMessage);
+    }
+
+    public void syncReadStatus(){
+        syncInBatches(readStatusKeyPattern(), DataType.STRING, this::syncReadStatus);
+    }
+
+    public void reconciliation() {
+        Set<String> liveSnowflakeIds = collectZSetMembers();
+        scanInBatches(ChatKeyGenerator.chatMessageKeyPattern(), DataType.STRING,
+                key -> !liveSnowflakeIds.contains(ChatKeyGenerator.parseChatMessageId(key)),
+                this::delete);
+    }
+
+    private void syncInBatches(String keyPattern, DataType dataType, Consumer<List<String>> sync) {
+        scanInBatches(keyPattern, dataType, key -> true, keys -> {
+            sync.accept(keys);
+            delete(keys);
+        });
+    }
+
+    private void scanInBatches(String keyPattern, DataType dataType,
+                               Predicate<String> filter, Consumer<List<String>> batchHandler) {
+        ScanOptions scanOptions = from(keyPattern, dataType);
         try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
             List<String> keys = new ArrayList<>();
             while (cursor.hasNext()) {
-                String findKey = cursor.next();
-                keys.add(findKey);
-                if (keys.size() == 1000) {
-                    syncChatMessage(keys);
-                    delete(keys);
+                String key = cursor.next();
+                if (!filter.test(key)) {
+                    continue;
+                }
+                keys.add(key);
+                if (keys.size() == BATCH_SIZE) {
+                    batchHandler.accept(keys);
                     keys.clear();
                 }
             }
             if (!keys.isEmpty()) {
-                syncChatMessage(keys);
-                delete(keys);
-            }
-        }
-    }
-
-    public void syncChatRoomMessage(){
-        String chatRoomMessagePattern = ChatKeyGenerator.chatRoomMessageKeyPattern();
-        ScanOptions scanOptions = from(chatRoomMessagePattern, DataType.ZSET);
-
-        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
-            List<String> keys = new ArrayList<>();
-            while (cursor.hasNext()) {
-                String findKey = cursor.next();
-                keys.add(findKey);
-                if(keys.size() == 1000){
-                    syncChatRoomMessage(keys);
-                    delete(keys);
-                    keys.clear();
-                }
-            }
-            if(!keys.isEmpty()){
-                syncChatRoomMessage(keys);
-                delete(keys);
-            }
-        }
-
-
-    }
-
-    public void syncReadStatus(){
-        String readStatusPattern = readStatusKeyPattern();
-        ScanOptions scanOptions = from(readStatusPattern, DataType.STRING);
-
-        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
-            List<String> keys = new ArrayList<>();
-            while (cursor.hasNext()) {
-                String findKey = cursor.next();
-                keys.add(findKey);
-                if(keys.size() == 1000){
-                    syncReadStatus(keys);
-                    delete(keys);
-                    keys.clear();
-                }
-            }
-            if(!keys.isEmpty()){
-                syncReadStatus(keys);
-                delete(keys);
+                batchHandler.accept(keys);
             }
         }
     }
@@ -103,8 +89,7 @@ public class ChatSyncService {
 
         List<ChatMessageBulk> chatMessageBulks = IntStream.range(0,keys.size())
                         .mapToObj(i -> {
-                            String key = keys.get(i);
-                            String id = key.split("::")[1];
+                            String id = ChatKeyGenerator.parseChatMessageId(keys.get(i));
                             return ChatMessageBulk.from(id, redisChatMessages.get(i));
                         })
                         .toList();
@@ -113,13 +98,13 @@ public class ChatSyncService {
     private void syncChatRoomMessage(List<String> keys){
         List<ChatRoomMessageBulk> chatRoomMessageBulks = new ArrayList<>();
         for (String key : keys) {
-            Long chatRoomId = Long.valueOf(key.split("::")[1]);
+            Long chatRoomId = ChatKeyGenerator.parseChatRoomId(key);
             Set<Object> members = redisTemplate.opsForZSet().range(key, 0, -1);
             for (Object member : members) {
                 String chatMessageId = RedisChatRoomMessage.chatMessageIdOf(member);
                 chatRoomMessageBulks.add(ChatRoomMessageBulk.from(chatRoomId, chatMessageId));
             }
-            if(members.size() > 200) redisTemplate.opsForZSet().removeRange(key, 0, -201);
+            if(members.size() > ZSET_RETAIN_SIZE) redisTemplate.opsForZSet().removeRange(key, 0, -(ZSET_RETAIN_SIZE + 1));
         }
         chatRepository.bulkChatRoomMessage(chatRoomMessageBulks);
     }
@@ -130,8 +115,7 @@ public class ChatSyncService {
                 .toList();
         List<ReadStatusBulk> readStatusBulks = IntStream.range(0, keys.size())
                 .mapToObj(i -> {
-                    String key = keys.get(i);
-                    Long chatParticipantId = Long.valueOf(key.split("::")[1]);
+                    Long chatParticipantId = ChatKeyGenerator.parseReadStatusChatParticipantId(keys.get(i));
                     String chatMessageId = chatMessageIds.get(i);
                     return ReadStatusBulk.from(chatParticipantId, chatMessageId);
                 })
@@ -143,35 +127,11 @@ public class ChatSyncService {
         return ScanOptions.scanOptions()
                 .match(keyPattern)
                 .type(dataType)
-                .count(20L)
+                .count(SCAN_COUNT)
                 .build();
     }
     private void delete(List<String> keys){
         redisTemplate.delete(keys);
-    }
-
-    public void reconciliation() {
-        Set<String> liveSnowflakeIds = collectZSetMembers();
-        String chatMessageKeyPattern = ChatKeyGenerator.chatMessageKeyPattern();
-        ScanOptions scanOptions = from(chatMessageKeyPattern, DataType.STRING);
-
-        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
-            List<String> orphans = new ArrayList<>();
-            while (cursor.hasNext()) {
-                String key = cursor.next();
-                String snowflakeId = ChatKeyGenerator.parseChatMessageId(key);
-                if (!liveSnowflakeIds.contains(snowflakeId)) {
-                    orphans.add(key);
-                }
-                if (orphans.size() == 1000) {
-                    delete(orphans);
-                    orphans.clear();
-                }
-            }
-            if (!orphans.isEmpty()) {
-                delete(orphans);
-            }
-        }
     }
 
     private Set<String> collectZSetMembers() {

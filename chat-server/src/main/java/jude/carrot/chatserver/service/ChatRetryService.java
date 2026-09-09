@@ -1,6 +1,6 @@
 package jude.carrot.chatserver.service;
 
-import io.lettuce.core.RedisException;
+import jude.carrot.chatserver.key.redis.ChatKeyGenerator;
 import jude.carrot.infra.repository.chat.dto.RedisChatMessage;
 import jude.carrot.infra.repository.chat.dto.RedisChatRoomMessage;
 import jude.carrot.service.exception.CustomException;
@@ -25,7 +25,12 @@ public class ChatRetryService {
     private final RedisTemplate<String,Object> redisTemplate;
 
     @Retryable
-    public void saveRedis(String chatMessageKey, String chatRoomMessageKey, RedisChatMessage redisChatMessage, RedisChatRoomMessage redisChatRoomMessage, Double score){
+    public void saveRedis(Long chatRoomId, RedisChatMessage redisChatMessage){
+        String snowflakeId = redisChatMessage.id();
+        String chatMessageKey = ChatKeyGenerator.generateChatMessageKey(snowflakeId);
+        String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(chatRoomId);
+        RedisChatRoomMessage redisChatRoomMessage = RedisChatRoomMessage.from(snowflakeId);
+        double score = Double.parseDouble(snowflakeId);
         executeInTransaction(ops -> {
             ops.opsForValue().set(chatMessageKey, redisChatMessage);
             ops.opsForZSet().add(chatRoomMessageKey, redisChatRoomMessage, score);
@@ -45,8 +50,8 @@ public class ChatRetryService {
     }
 
     @Recover
-    public void recover(RedisException e){
-        log.error("error",e);
+    public void recover(Exception e, Long chatRoomId, RedisChatMessage redisChatMessage){
+        log.error("failed to save chat message {} of chatRoom {}", redisChatMessage.id(), chatRoomId, e);
         throw new CustomException(Status.PUBLISH_CHAT_MESSAGE_FAIL);
     }
 }

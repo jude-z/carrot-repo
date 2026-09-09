@@ -13,7 +13,6 @@ import jude.carrot.infra.repository.chat.dto.ChatMessageElement;
 import jude.carrot.infra.repository.chat.dto.CreateChatRoomRequest;
 import jude.carrot.infra.repository.chat.dto.PublishChatRequest;
 import jude.carrot.infra.repository.chat.dto.RedisChatMessage;
-import jude.carrot.infra.repository.chat.dto.RedisChatRoomMessage;
 import jude.carrot.infra.repository.chat.dto.RedisReadStatus;
 import jude.carrot.infra.repository.user.UserRepository;
 import jude.carrot.service.exception.CustomException;
@@ -251,7 +250,7 @@ class ChatServiceTest {
     }
 
     @Test
-    @DisplayName("메시지를 발행하면 ChatRetryService를 통해 메시지 키와 채팅방 zset 멤버를 함께 저장한다")
+    @DisplayName("메시지를 발행하면 채팅방 ID와 메시지를 ChatRetryService에 위임한다")
     void publish_success() {
         ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
         when(chatCacheService.fetchChatRoom(CHAT_ROOM_ID)).thenReturn(Optional.of(chatRoom));
@@ -261,18 +260,11 @@ class ChatServiceTest {
 
         chatService.publish(CHAT_ROOM_ID, USER_ID, request);
 
-        String expectedMessageKey = ChatKeyGenerator.generateChatMessageKey("123456789");
-        String expectedRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(CHAT_ROOM_ID);
-
         ArgumentCaptor<RedisChatMessage> messageCaptor = ArgumentCaptor.forClass(RedisChatMessage.class);
-        ArgumentCaptor<RedisChatRoomMessage> roomMessageCaptor = ArgumentCaptor.forClass(RedisChatRoomMessage.class);
-        ArgumentCaptor<Double> scoreCaptor = ArgumentCaptor.forClass(Double.class);
-        verify(chatRetryService).saveRedis(eq(expectedMessageKey), eq(expectedRoomMessageKey),
-                messageCaptor.capture(), roomMessageCaptor.capture(), scoreCaptor.capture());
+        verify(chatRetryService).saveRedis(eq(CHAT_ROOM_ID), messageCaptor.capture());
+        assertThat(messageCaptor.getValue().id()).isEqualTo("123456789");
         assertThat(messageCaptor.getValue().content()).isEqualTo("hello");
         assertThat(messageCaptor.getValue().publishedBy()).isEqualTo(CHAT_PARTICIPANT_ID);
-        assertThat(roomMessageCaptor.getValue().chatMessageId()).isEqualTo("123456789");
-        assertThat(scoreCaptor.getValue()).isEqualTo(123456789.0);
     }
 
     // ---------- pollingFetch ----------
