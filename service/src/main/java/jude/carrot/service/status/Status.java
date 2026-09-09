@@ -24,7 +24,8 @@ public enum Status {
     POST_NOT_EXIST("PNE", "post not exist", HttpStatus.BAD_REQUEST),
     ADDRESS_NOT_ENROLLED("ANE", "address not enrolled", HttpStatus.BAD_REQUEST),
     UPDATE_POST_NOT_AUTHORIZE("UPN", "this user is not creater", HttpStatus.BAD_REQUEST),
-    CHAT_MESSAGE_NOT_EXIST("CNE", "chat message not exit",HttpStatus.BAD_REQUEST);
+    CHAT_MESSAGE_NOT_EXIST("CNE", "chat message not exit",HttpStatus.BAD_REQUEST),
+    PUBLISH_CHAT_MESSAGE_FAIL("CMF","push chat message fail",HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
     private final String detailMessage;
