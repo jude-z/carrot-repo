@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/testdb
-    username: 'root'
-    password: '00000000'
+    url: ${DB_URL:jdbc:mysql://localhost:3306/testdb}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:00000000}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     show-sql: true
 
   data:
@@ -23,3 +23,10 @@ jude:
     default-url: /api/v1/auth
     login-url: /login
     logout-url: /logout
+  kakao-token: ${KAKAO_TOKEN:kakao_token}
+  kakao-url: ${KAKAO_URL:https://dapi.kakao.com/v2/local/geo/coord2regioncode.json}
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:carrot-bucket}
+    key-name: ${S3_KEY_NAME:images}
+server:
+  port: ${SERVER_PORT:8080}

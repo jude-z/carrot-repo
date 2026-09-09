@@ -1,4 +1,4 @@
-package jude.carrot.chatserver.config;
+package jude.carrot.apiserver.config;
 
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
