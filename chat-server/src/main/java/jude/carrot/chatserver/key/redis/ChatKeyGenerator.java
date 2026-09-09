@@ -1,10 +1,10 @@
 package jude.carrot.chatserver.key.redis;
 
 public class ChatKeyGenerator {
-    private static final String DELIMITER = "::";
-    private static String chatMessageFormat = "chatMessage::%s";
-    private static String chatRoomMessageFormat = "chatRoom::%s";
-    private static String readStatusFormat = "chatParticipantId::%s::%s";
+    private static final String chatMessageFormat = "chatMessage::%s";
+    private static final String chatRoomMessageFormat = "chatRoom::%s";
+    private static final String readStatusFormat = "chatParticipantId::%s::%s";
+    private static final String token = "::";
 
 
     public static String generateChatMessageKey(String snowflakeId){
@@ -12,7 +12,10 @@ public class ChatKeyGenerator {
     }
 
     public static String parseChatMessageId(String chatMessageKey){
-        return chatMessageKey.split(DELIMITER)[1];
+        String[] split = chatMessageKey.split(token);
+        if(split.length != 2) return null;
+        if(!split[0].equals("chatMessage")) return null;
+        return split[1];
     }
 
     public static String generateChatRoomMessageKey(Long chatRoomId){
@@ -21,7 +24,7 @@ public class ChatKeyGenerator {
     }
 
     public static Long parseChatRoomId(String chatRoomMessageKey){
-        return Long.valueOf(chatRoomMessageKey.split(DELIMITER)[1]);
+        return Long.valueOf(chatRoomMessageKey.split(token)[1]);
     }
 
     public static String generateReadStatusKey(Long chatParticipantId, Long chatRoomId){
@@ -31,7 +34,7 @@ public class ChatKeyGenerator {
     }
 
     public static Long parseReadStatusChatParticipantId(String readStatusKey){
-        return Long.valueOf(readStatusKey.split(DELIMITER)[1]);
+        return Long.valueOf(readStatusKey.split(token)[1]);
     }
 
     public static String chatMessageKeyPattern(){
