@@ -115,7 +115,6 @@ class ChatSyncServiceTest {
         when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
         ZSetOperations<String, Object> zSetOperations = mock(ZSetOperations.class);
         when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
-        // 실제 Redis에서는 Object.class serializer 때문에 멤버가 Map으로 역직렬화된다
         when(zSetOperations.range("chatRoom::10", 0, -1))
                 .thenReturn(new LinkedHashSet<>(List.of(Map.of("chatMessageId", "100"))));
         when(zSetOperations.range("chatRoom::20", 0, -1))

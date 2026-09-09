@@ -1,6 +1,7 @@
 package jude.carrot.chatserver.key.redis;
 
 public class ChatKeyGenerator {
+    private static final String DELIMITER = "::";
     private static String chatMessageFormat = "chatMessage::%s";
     private static String chatRoomMessageFormat = "chatRoom::%s";
     private static String readStatusFormat = "chatParticipantId::%s::%s";
@@ -11,7 +12,7 @@ public class ChatKeyGenerator {
     }
 
     public static String parseChatMessageId(String chatMessageKey){
-        return chatMessageKey.split("::")[1];
+        return chatMessageKey.split(DELIMITER)[1];
     }
 
     public static String generateChatRoomMessageKey(Long chatRoomId){
@@ -19,10 +20,18 @@ public class ChatKeyGenerator {
         return chatRoomMessageFormat.formatted(strChatRoomId);
     }
 
-    public static String generateReadStatusKey(Long userId, Long chatRoomId){
-        String strUserId = String.valueOf(userId);
+    public static Long parseChatRoomId(String chatRoomMessageKey){
+        return Long.valueOf(chatRoomMessageKey.split(DELIMITER)[1]);
+    }
+
+    public static String generateReadStatusKey(Long chatParticipantId, Long chatRoomId){
+        String strChatParticipantId = String.valueOf(chatParticipantId);
         String strChatRoomId = String.valueOf(chatRoomId);
-        return readStatusFormat.formatted(strUserId, strChatRoomId);
+        return readStatusFormat.formatted(strChatParticipantId, strChatRoomId);
+    }
+
+    public static Long parseReadStatusChatParticipantId(String readStatusKey){
+        return Long.valueOf(readStatusKey.split(DELIMITER)[1]);
     }
 
     public static String chatMessageKeyPattern(){
