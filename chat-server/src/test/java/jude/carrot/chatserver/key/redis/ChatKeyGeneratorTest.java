@@ -30,8 +30,8 @@ class ChatKeyGeneratorTest {
     }
 
     @Test
-    @DisplayName("읽음 상태 키는 userId/chatRoomId 조합별로 서로 다른 값을 생성한다")
-    void generateReadStatusKey_isUniquePerUserAndChatRoom() {
+    @DisplayName("읽음 상태 키는 chatParticipantId/chatRoomId 조합별로 서로 다른 값을 생성한다")
+    void generateReadStatusKey_isUniquePerChatParticipantAndChatRoom() {
         String key1 = ChatKeyGenerator.generateReadStatusKey(1L, 10L);
         String key2 = ChatKeyGenerator.generateReadStatusKey(1L, 20L);
         String key3 = ChatKeyGenerator.generateReadStatusKey(2L, 10L);
@@ -39,6 +39,30 @@ class ChatKeyGeneratorTest {
         assertThat(key1).isEqualTo("chatParticipantId::1::10");
         assertThat(key1).isNotEqualTo(key2);
         assertThat(key1).isNotEqualTo(key3);
+    }
+
+    @Test
+    @DisplayName("채팅 메시지 키에서 snowflakeId를 파싱한다")
+    void parseChatMessageId_returnsSnowflakeId() {
+        String key = ChatKeyGenerator.generateChatMessageKey("111");
+
+        assertThat(ChatKeyGenerator.parseChatMessageId(key)).isEqualTo("111");
+    }
+
+    @Test
+    @DisplayName("채팅방 메시지 키에서 chatRoomId를 파싱한다")
+    void parseChatRoomId_returnsChatRoomId() {
+        String key = ChatKeyGenerator.generateChatRoomMessageKey(7L);
+
+        assertThat(ChatKeyGenerator.parseChatRoomId(key)).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("읽음 상태 키에서 chatParticipantId를 파싱한다")
+    void parseReadStatusChatParticipantId_returnsChatParticipantId() {
+        String key = ChatKeyGenerator.generateReadStatusKey(5L, 10L);
+
+        assertThat(ChatKeyGenerator.parseReadStatusChatParticipantId(key)).isEqualTo(5L);
     }
 
     @Test

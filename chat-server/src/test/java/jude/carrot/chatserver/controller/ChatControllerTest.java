@@ -9,6 +9,8 @@ import jude.carrot.chatserver.metrics.Transport;
 import jude.carrot.chatserver.service.ChatService;
 import jude.carrot.service.exception.CustomException;
 import jude.carrot.web.advice.CommonControllerAdvice;
+import jude.carrot.web.auth.CustomAuthenticationToken;
+import jude.carrot.web.auth.CustomUserDetails;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -137,6 +139,23 @@ class ChatControllerTest {
     }
 
     @Test
+    @DisplayName("실제 인증 토큰(CustomAuthenticationToken)으로 요청해도 @AuthenticationPrincipal 에 Long userId 가 전달된다")
+    void publish_resolvesLongPrincipalFromCustomAuthenticationToken() throws Exception {
+        CustomUserDetails userDetails = new CustomUserDetails(USER_ID);
+        SecurityContextHolder.getContext().setAuthentication(
+                new CustomAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
+
+        mockMvc.perform(post("/api/v1/chatRoom/publish/{chatRoomId}", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"hello"}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(chatService).publish(eq(CHAT_ROOM_ID), eq(USER_ID), any());
+    }
+
+    @Test
     @DisplayName("채팅방 참여자가 아니면 발행 시 400과 함께 CHAT_PARTICIPANT_NOT_EXIST 코드를 반환한다")
     void publish_fail_whenChatParticipantNotExist() throws Exception {
         doThrow(new CustomException(CHAT_PARTICIPANT_NOT_EXIST)).when(chatService).publish(eq(CHAT_ROOM_ID), eq(USER_ID), any());
@@ -153,8 +172,7 @@ class ChatControllerTest {
     @Test
     @DisplayName("메시지 목록을 페이지 단위로 조회하면 200과 함께 데이터를 반환한다")
     void fetch_success() throws Exception {
-        ChatMessageResponse dto = ChatMessageResponse.builder()
-                .page(List.of()).pageNum(0).pageSize(20).totalPage(0).elementCount(0).isLast(true).build();
+        ChatMessageResponse dto = new ChatMessageResponse(List.of(), 20, 0, 0, true);
         when(chatService.fetch(1, 20, CHAT_ROOM_ID, USER_ID)).thenReturn(dto);
 
         mockMvc.perform(get("/api/v1/chatRoom/fetch/{chatRoomId}", CHAT_ROOM_ID))
@@ -188,8 +206,7 @@ class ChatControllerTest {
     @Test
     @DisplayName("폴링 요청은 비동기로 처리되며 완료되면 새 메시지 목록을 반환한다")
     void pollingFetch_success() throws Exception {
-        PollingChatMessagesResponse dto = PollingChatMessagesResponse.builder()
-                .elements(List.of()).elementCount(0).build();
+        PollingChatMessagesResponse dto = new PollingChatMessagesResponse(List.of());
         when(chatService.pollingFetch(CHAT_ROOM_ID, USER_ID, "1000")).thenReturn(Mono.just(dto));
 
         MvcResult mvcResult = mockMvc.perform(get("/api/v1/chatRoom/polling-fetch/{chatRoomId}", CHAT_ROOM_ID)

@@ -1,14 +1,11 @@
 package jude.carrot.chatserver.response;
 
 import jude.carrot.infra.repository.chat.dto.ChatMessageElement;
-import lombok.Builder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.ArrayList;
 import java.util.List;
 
-@Builder
 public record ChatMessageResponse(
         List<ChatMessageElement> page,
         int pageSize,
@@ -19,21 +16,22 @@ public record ChatMessageResponse(
 ) {
 
     public ChatMessageResponse {
-        if (page == null) {
-            page = new ArrayList<>();
-        }
+        page = page == null ? List.of() : List.copyOf(page);
+        elementCount = page.size();
+    }
+
+    public ChatMessageResponse(List<ChatMessageElement> page, int pageSize, int pageNum, int totalPage, boolean isLast) {
+        this(page, pageSize, pageNum, totalPage, 0, isLast);
     }
 
     public static ChatMessageResponse from(Page<ChatMessageElement> page) {
         Pageable pageable = page.getPageable();
-        List<ChatMessageElement> content = page.getContent();
-        return ChatMessageResponse.builder()
-                .page(content)
-                .pageSize(pageable.getPageSize())
-                .pageNum(pageable.getPageNumber())
-                .elementCount(content.size())
-                .totalPage(page.getTotalPages())
-                .isLast(page.isLast())
-                .build();
+        return new ChatMessageResponse(
+                page.getContent(),
+                pageable.getPageSize(),
+                pageable.getPageNumber(),
+                page.getTotalPages(),
+                page.isLast()
+        );
     }
 }
