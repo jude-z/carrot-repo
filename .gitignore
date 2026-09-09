@@ -34,3 +34,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# EC2 key pairs (never commit)
+*.pem
