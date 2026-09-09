@@ -24,3 +24,27 @@ jude:
 
 snowflake:
   instance-id: 1
+
+server:
+  port: ${SERVER_PORT:8080}
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:500}
+    max-keep-alive-requests: ${TOMCAT_MAX_KEEPALIVE_REQUESTS:100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: chat-server
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        chat.websocket.publish: true
