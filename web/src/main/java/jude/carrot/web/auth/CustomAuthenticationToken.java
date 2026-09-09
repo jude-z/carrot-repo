@@ -16,6 +16,6 @@ public class CustomAuthenticationToken extends UsernamePasswordAuthenticationTok
     public Object getPrincipal() {
         CustomUserDetails userDetails = (CustomUserDetails) super.getPrincipal();
         if(userDetails == null) return null;
-        return userDetails.getUsername();
+        return Long.parseLong(userDetails.getUsername());
     }
 }
