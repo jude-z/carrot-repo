@@ -78,7 +78,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         WebSocketSession safeSession = new ConcurrentWebSocketSessionDecorator(session, SEND_TIME_LIMIT_MILLIS, SEND_BUFFER_SIZE_LIMIT);
         roomSessions.computeIfAbsent(chatRoomId, key -> new ConcurrentHashMap<>()).put(session.getId(), safeSession);
         activeSessions.incrementAndGet();
-        activeClientTracker.touch(Transport.WEBSOCKET, userId);
+        activeClientTracker.connected(Transport.WEBSOCKET, userId);
     }
 
     @Override
