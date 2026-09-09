@@ -107,7 +107,8 @@ public class PostService {
             post.setThumbnailImage(SingleImage.from(thumbnailImageUrl));
         }
         if(!ObjectUtils.isEmpty(contentImages)){
-            post.setContentImages(contentImages);
+            post.getContentImages().clear();
+            post.getContentImages().addAll(contentImages);
         }
     }
 }

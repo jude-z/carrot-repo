@@ -3,6 +3,7 @@ package jude.carrot.web.config;
 
 import jude.carrot.web.auth.JsonAuthenticationFailureHandler;
 import jude.carrot.web.auth.JsonAuthenticationSuccessHandler;
+import jude.carrot.web.auth.JsonLogoutSuccessHandler;
 import jude.carrot.web.auth.UserAuthenticationProvider;
 import jude.carrot.web.filter.JsonAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +51,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JsonAuthenticationFailureHandler jsonAuthenticationFailureHandler,
-                                                   JsonAuthenticationSuccessHandler jsonAuthenticationSuccessHandler){
+                                                   JsonAuthenticationSuccessHandler jsonAuthenticationSuccessHandler,
+                                                   JsonLogoutSuccessHandler jsonLogoutSuccessHandler){
         jsonAuthenticationFilter.setAuthenticationFailureHandler(jsonAuthenticationFailureHandler);
         jsonAuthenticationFilter.setAuthenticationSuccessHandler(jsonAuthenticationSuccessHandler);
         jsonAuthenticationFilter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
@@ -74,7 +76,9 @@ public class SecurityConfig {
                         .requestMatchers(GET,getWhiteList).permitAll()
                         .requestMatchers(POST,postWhiteList).permitAll()
                         .anyRequest().authenticated())
-                .logout(logout -> logout.logoutUrl(logoutUrl));
+                .logout(logout -> logout
+                        .logoutUrl(logoutUrl)
+                        .logoutSuccessHandler(jsonLogoutSuccessHandler));
         return http.build();
     }
     @Bean

@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jude.carrot.infra.entity.user.User;
 import lombok.Builder;
-import org.springframework.util.StringUtils;
 
 import static jude.carrot.infra.entity.image.SingleImage.*;
 
@@ -73,7 +72,6 @@ public class UserRequest {
         public void updateUser(User user, String encodedPassword){
             user.setPassword(encodedPassword);
             user.setNickname(nickname);
-            if(StringUtils.hasText(profileImageUrl)) user.setImage(from(profileImageUrl));
         }
 
     }

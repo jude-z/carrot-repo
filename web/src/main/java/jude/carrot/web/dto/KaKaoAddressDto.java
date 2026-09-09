@@ -4,78 +4,50 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+/**
+ * Kakao Local API coord2regioncode.json (좌표 -> 행정구역) 응답.
+ * documents 는 region_type B(법정동), H(행정동) 순으로 오며, 시/구/동은 첫 번째(법정동) 항목을 사용한다.
+ */
 public record KaKaoAddressDto(
         Meta meta,
-        List<DocumentAddress> documents
+        List<Region> documents
 ) {
 
     public String getSido() {
-        if(documents.isEmpty()) return null;
-        Address address = documents.get(0).address();
-        if(address == null) return null;
-        return address.region1depthName();
+        Region region = first();
+        return region == null ? null : region.region1depthName();
     }
 
     public String getGu() {
-        if(documents.isEmpty()) return null;
-        Address address = documents.get(0).address();
-        if(address == null) return null;
-        return address.region2depthName();
+        Region region = first();
+        return region == null ? null : region.region2depthName();
     }
 
     public String getDong() {
-        if(documents.isEmpty()) return null;
-        Address address = documents.get(0).address();
-        if(address == null) return null;
-        return address.region3depthName();
+        Region region = first();
+        return region == null ? null : region.region3depthName();
+    }
+
+    private Region first() {
+        if (documents == null || documents.isEmpty()) return null;
+        return documents.get(0);
     }
 
     private record Meta(
-            Integer totalCount,
-            Integer pageableCount,
-            Boolean isEnd
+            Integer totalCount
     ) {
     }
 
-    private record DocumentAddress(
+    private record Region(
+            String regionType,
+            String code,
             String addressName,
-            Double y,
+            @JsonProperty("region_1depth_name") String region1depthName,
+            @JsonProperty("region_2depth_name") String region2depthName,
+            @JsonProperty("region_3depth_name") String region3depthName,
+            @JsonProperty("region_4depth_name") String region4depthName,
             Double x,
-            String addressType,
-            Address address,
-            RoadAddress roadAddress
-    ) {
-    }
-
-    private record Address(
-            String addressName,
-            @JsonProperty("region_1depth_name") String region1depthName,
-            @JsonProperty("region_2depth_name") String region2depthName,
-            @JsonProperty("region_3depth_name") String region3depthName,
-            @JsonProperty("region_3depth_h_name") String region3depthHName,
-            String hCode,
-            String bCode,
-            String mountainYn,
-            String mainAddressNo,
-            String subAddressNo,
-            String x,
-            String y
-    ) {
-    }
-
-    private record RoadAddress(
-            String addressName,
-            @JsonProperty("region_1depth_name") String region1depthName,
-            @JsonProperty("region_2depth_name") String region2depthName,
-            @JsonProperty("region_3depth_name") String region3depthName,
-            String roadName,
-            String undergroundYn,
-            String mainBuildingNo,
-            String subBuildingNo,
-            String buildingName,
-            String zoneNo,
-            String y,
-            String x
+            Double y
     ) {
     }
 }

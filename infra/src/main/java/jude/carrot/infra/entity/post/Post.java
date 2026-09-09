@@ -37,6 +37,6 @@ public class Post {
         this.address = address;
         this.createdBy = user;
         this.thumbnailImage = thumbnailImage;
-        this.contentImages = contentImages;
+        this.contentImages = contentImages == null ? new ArrayList<>() : new ArrayList<>(contentImages);
     }
 }
