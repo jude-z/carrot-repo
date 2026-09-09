@@ -24,8 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -82,10 +80,7 @@ public class ChatService {
         return ChatMessageResponse.from(page);
     }
     public void publish(Long chatRoomId, Long userId, PublishChatRequest publishChatRequest) {
-        chatCacheService.fetchChatRoom(chatRoomId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
-        ChatParticipant chatParticipant = chatCacheService.fetchChatParticipant(chatRoomId, userId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
+        ChatParticipant chatParticipant = validateParticipant(chatRoomId, userId);
         Long chatParticipantId = chatParticipant.getId();
         String snowflakeId = snowFlakeKeyGenerator.generateSnowFlakeKey(LocalDateTime.now());
         RedisChatMessage redisChatMessage = RedisChatMessage.from(snowflakeId, publishChatRequest, LocalDateTime.now(),chatParticipantId);
@@ -93,12 +88,8 @@ public class ChatService {
     }
 
     public Mono<PollingChatMessagesResponse> pollingFetch(Long chatRoomId, Long userId,String lastChatMessageId) {
-        chatCacheService.fetchChatRoom(chatRoomId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
-        chatCacheService.fetchChatParticipant(chatRoomId, userId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
+        validateParticipant(chatRoomId, userId);
         String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(chatRoomId);
-        // 클라이언트가 이미 받은 마지막 메시지는 제외(배타). 상한은 폴링 도중 발행된 메시지를 놓치지 않도록 틱마다 다시 계산한다.
         Range.Bound<Double> lowerBound = Range.Bound.exclusive(Double.valueOf(lastChatMessageId));
 
         return Flux.interval(Duration.ZERO, Duration.ofMillis(500))
@@ -124,14 +115,18 @@ public class ChatService {
     }
 
     public void read(Long chatRoomId, Long userId, String chatMessageKey) {
-        chatCacheService.fetchChatRoom(chatRoomId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
-        chatCacheService.fetchChatParticipant(chatRoomId, userId)
-                .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
+        ChatParticipant chatParticipant = validateParticipant(chatRoomId, userId);
         chatCacheService.fetchChatMessage(chatMessageKey)
                 .orElseThrow(() -> new CustomException(Status.CHAT_MESSAGE_NOT_EXIST));
-        String readStatusKey = ChatKeyGenerator.generateReadStatusKey(userId, chatRoomId);
+        String readStatusKey = ChatKeyGenerator.generateReadStatusKey(chatParticipant.getId(), chatRoomId);
         String chatMessageId = ChatKeyGenerator.parseChatMessageId(chatMessageKey);
         redisTemplate.opsForValue().set(readStatusKey, RedisReadStatus.from(chatMessageId));
+    }
+
+    private ChatParticipant validateParticipant(Long chatRoomId, Long userId) {
+        chatCacheService.fetchChatRoom(chatRoomId)
+                .orElseThrow(() -> new CustomException(Status.CHAT_ROOM_NOT_EXIST));
+        return chatCacheService.fetchChatParticipant(chatRoomId, userId)
+                .orElseThrow(() -> new CustomException(Status.CHAT_PARTICIPANT_NOT_EXIST));
     }
 }

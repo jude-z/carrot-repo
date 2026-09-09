@@ -7,6 +7,8 @@ import jude.carrot.chatserver.response.PollingChatMessagesResponse;
 import jude.carrot.chatserver.service.ChatService;
 import jude.carrot.service.exception.CustomException;
 import jude.carrot.web.advice.CommonControllerAdvice;
+import jude.carrot.web.auth.CustomAuthenticationToken;
+import jude.carrot.web.auth.CustomUserDetails;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -127,6 +129,23 @@ class ChatControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SC"));
+
+        verify(chatService).publish(eq(CHAT_ROOM_ID), eq(USER_ID), any());
+    }
+
+    @Test
+    @DisplayName("실제 인증 토큰(CustomAuthenticationToken)으로 요청해도 @AuthenticationPrincipal 에 Long userId 가 전달된다")
+    void publish_resolvesLongPrincipalFromCustomAuthenticationToken() throws Exception {
+        CustomUserDetails userDetails = new CustomUserDetails(USER_ID);
+        SecurityContextHolder.getContext().setAuthentication(
+                new CustomAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
+
+        mockMvc.perform(post("/api/v1/chatRoom/publish/{chatRoomId}", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"hello"}
+                                """))
+                .andExpect(status().isOk());
 
         verify(chatService).publish(eq(CHAT_ROOM_ID), eq(USER_ID), any());
     }

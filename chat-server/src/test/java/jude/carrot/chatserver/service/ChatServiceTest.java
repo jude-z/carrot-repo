@@ -303,7 +303,6 @@ class ChatServiceTest {
 
         String chatRoomMessageKey = ChatKeyGenerator.generateChatRoomMessageKey(CHAT_ROOM_ID);
         String chatMessageKey = ChatKeyGenerator.generateChatMessageKey("2000");
-        // string 값도 실제 Redis에서는 Map으로 역직렬화된다
         Map<String, Object> redisChatMessage = Map.of(
                 "id", "2000", "content", "new message", "publishedBy", CHAT_PARTICIPANT_ID, "publishedAt", "2026-09-07T12:30:15");
 
@@ -311,7 +310,6 @@ class ChatServiceTest {
         ReactiveValueOperations<String, Object> reactiveValueOperations = mock(ReactiveValueOperations.class);
         when(reactiveRedisTemplate.opsForZSet()).thenReturn(reactiveZSetOperations);
         when(reactiveRedisTemplate.opsForValue()).thenReturn(reactiveValueOperations);
-        // zset 멤버는 실제 Redis에서 Map으로 역직렬화되므로 그 형태 그대로 준다
         when(reactiveZSetOperations.rangeByScore(eq(chatRoomMessageKey), any(Range.class)))
                 .thenReturn(Flux.just(Map.of("chatMessageId", "2000")));
         when(reactiveValueOperations.multiGet(List.of(chatMessageKey)))
@@ -368,7 +366,7 @@ class ChatServiceTest {
     }
 
     @Test
-    @DisplayName("읽음 처리를 요청하면 읽음 상태 키로 Redis에 저장한다")
+    @DisplayName("읽음 처리를 요청하면 참여자 ID 기준 읽음 상태 키로 Redis에 저장한다")
     void read_success() {
         ChatRoom chatRoom = ChatRoom.from("title", chatParticipant, chatParticipant);
         ChatMessage chatMessage = ChatMessage.builder().id("1").content("hi").build();
@@ -380,7 +378,7 @@ class ChatServiceTest {
 
         chatService.read(CHAT_ROOM_ID, USER_ID, "chatMessage::1");
 
-        String expectedKey = ChatKeyGenerator.generateReadStatusKey(USER_ID, CHAT_ROOM_ID);
+        String expectedKey = ChatKeyGenerator.generateReadStatusKey(CHAT_PARTICIPANT_ID, CHAT_ROOM_ID);
         ArgumentCaptor<RedisReadStatus> captor = ArgumentCaptor.forClass(RedisReadStatus.class);
         verify(valueOperations).set(eq(expectedKey), captor.capture());
         assertThat(captor.getValue().chatMessageId()).isEqualTo("1");
